@@ -1,0 +1,22 @@
+{
+	"name": "comm-node",
+	"version": "0.0.1",
+	"description": "",
+	"author": "Jay",
+	"license": "MIT",
+	"private": true,
+	"scripts": {
+		"dev": "pnpm -r dev",
+		"dev:client": "pnpm --filter client dev",
+		"dev:server": "pnpm --filter server dev",
+		"build": "pnpm -r build",
+		"build:client": "pnpm --filter client build",
+		"build:server": "pnpm --filter server build",
+		"start": "pnpm -r start",
+		"start:client": "pnpm --filter client start",
+		"start:server": "pnpm --filter server start",
+		"lint": "pnpm -r lint",
+		"format": "pnpm -r format",
+		"type-check": "pnpm -r type-check"
+	}
+}

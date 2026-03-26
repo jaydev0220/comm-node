@@ -1,0 +1,32 @@
+{
+	"name": "@apps/client",
+	"version": "0.0.1",
+	"private": true,
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start",
+		"lint": "eslint",
+		"format": "prettier --write --ignore-path ../../.prettierignore ."
+	},
+	"dependencies": {
+		"next": "catalog:client",
+		"react": "catalog:client",
+		"react-dom": "catalog:client"
+	},
+	"devDependencies": {
+		"@packages/prettier-config": "workspace:*",
+		"@tailwindcss/postcss": "catalog:client",
+		"@types/node": "catalog:",
+		"@types/react": "catalog:client",
+		"@types/react-dom": "catalog:client",
+		"babel-plugin-react-compiler": "catalog:client",
+		"eslint": "catalog:client",
+		"eslint-config-next": "catalog:client",
+		"prettier": "catalog:",
+		"prettier-plugin-tailwindcss": "catalog:client",
+		"tailwindcss": "catalog:client",
+		"typescript": "catalog:"
+	},
+	"prettier": "@packages/prettier-config"
+}

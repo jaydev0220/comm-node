@@ -1,0 +1,44 @@
+packages:
+  - apps/*
+  - packages/*
+catalog:
+  '@types/node': ^24
+  prettier: ^3.8.1
+  typescript: ^5
+  zod: ^4.3.6
+catalogMode: strict
+catalogs:
+  client:
+    '@tailwindcss/postcss': ^4
+    '@types/react': ^19
+    '@types/react-dom': ^19
+    babel-plugin-react-compiler: 1.0.0
+    eslint: ^9
+    eslint-config-next: 16.2.1
+    next: 16.2.1
+    prettier-plugin-tailwindcss: ^0.7.2
+    react: 19.2.4
+    react-dom: 19.2.4
+    tailwindcss: ^4
+  server:
+    '@eslint/js': ^10.0.1
+    '@prisma/adapter-pg': ^7.5.0
+    '@prisma/client': ^7.5.0
+    '@types/cors': ^2.8.19
+    '@types/express': ^5.0.6
+    '@types/pg': ^8.20.0
+    cors: ^2.8.6
+    eslint: ^10.1.0
+    express: ^5.2.1
+    globals: ^17.4.0
+    helmet: ^8.1.0
+    pg: ^8.20.0
+    prisma: ^7.5.0
+    tsx: ^4.21.0
+    typescript-eslint: ^8.57.2
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
+onlyBuiltDependencies:
+  - esbuild
+  - prisma
