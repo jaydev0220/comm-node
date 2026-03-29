@@ -1,16 +1,16 @@
-import type { RequestHandler } from "express";
-import type { ZodSchema, ZodError } from "zod";
-import { errors } from "./error-handler.js";
-import type { ErrorDetail } from "@packages/schemas";
+import type { RequestHandler } from 'express';
+import type { ZodSchema, ZodError } from 'zod';
+import { errors } from './error-handler.js';
+import type { ErrorDetail } from '@packages/schemas';
 
 /**
  * Convert Zod error to API error details format.
  */
 const formatZodError = (error: ZodError): ErrorDetail[] => {
 	return error.issues.map((issue) => ({
-		field: issue.path.map(String).join("."),
+		field: issue.path.map(String).join('.'),
 		code: issue.code,
-		message: issue.message,
+		message: issue.message
 	}));
 };
 
@@ -70,11 +70,8 @@ export const validate = (options: ValidateOptions): RequestHandler => {
 /**
  * Shorthand validators for common use cases.
  */
-export const validateBody = (schema: ZodSchema): RequestHandler =>
-	validate({ body: schema });
+export const validateBody = (schema: ZodSchema): RequestHandler => validate({ body: schema });
 
-export const validateQuery = (schema: ZodSchema): RequestHandler =>
-	validate({ query: schema });
+export const validateQuery = (schema: ZodSchema): RequestHandler => validate({ query: schema });
 
-export const validateParams = (schema: ZodSchema): RequestHandler =>
-	validate({ params: schema });
+export const validateParams = (schema: ZodSchema): RequestHandler => validate({ params: schema });
