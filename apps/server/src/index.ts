@@ -1,3 +1,4 @@
+import { createServer } from 'node:http';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -6,6 +7,8 @@ import rateLimit from 'express-rate-limit';
 import { env } from './lib/env.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import routes from './routes/index.js';
+import { createWebSocketServer } from './ws/index.js';
+import './ws/handlers.js';
 
 const app = express();
 
@@ -49,8 +52,14 @@ app.use('/api', routes);
 // Error handling
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+// Create HTTP server and attach WebSocket
+const httpServer = createServer(app);
+
+createWebSocketServer(httpServer);
 // Start server
-app.listen(env.PORT, () => {
+httpServer.listen(env.PORT, () => {
 	console.log(`🚀 Server running on http://localhost:${env.PORT}`);
+	console.log(`🔌 WebSocket available at ws://localhost:${env.PORT}/api/ws`);
 	console.log(`📝 Environment: ${env.NODE_ENV}`);
 });
