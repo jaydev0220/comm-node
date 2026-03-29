@@ -2,13 +2,14 @@
 
 ## Tech Stack
 
-- **Frontend:** Next.js, Tailwind CSS
-- **Backend:** Express, Prisma
-- **Database:** PostgreSQL
-- **Language:** TypeScript
-- **Validation:** Zod
+- **Runtime:** Node.js 24
+- **Frontend:** Next.js 16, Tailwind CSS 4
+- **Backend:** Express 5, Prisma 7
+- **Database:** PostgreSQL 18, pg 8
+- **Language:** TypeScript 5
+- **Validation:** Zod 4
 - **Linting:** ESLint, Prettier
-- **Package Manager:** pnpm
+- **Package Manager:** pnpm 10+
 
 ## Project Structure
 
