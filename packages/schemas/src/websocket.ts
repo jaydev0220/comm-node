@@ -1,11 +1,4 @@
 import { z } from "zod";
-import {
-	attachmentSchema,
-	messageSchema,
-	messageTypeSchema,
-	ogEmbedSchema,
-} from "./messages.js";
-import { userSchema } from "./users.js";
 
 // ============================================================================
 // Common Types
@@ -41,6 +34,57 @@ export const wsServerEventSchema = z.enum([
 	"error",
 ]);
 export type WsServerEvent = z.infer<typeof wsServerEventSchema>;
+
+// ============================================================================
+// WebSocket-specific Message Schema (matches AsyncAPI spec)
+// ============================================================================
+
+/** Simplified user for WS messages (per AsyncAPI spec) */
+export const wsUserSchema = z.object({
+	id: z.string().uuid(),
+	username: z.string(),
+	displayName: z.string(),
+	avatarUrl: z.string().url().nullable(),
+});
+export type WsUser = z.infer<typeof wsUserSchema>;
+
+/** Attachment schema for WS messages */
+export const wsAttachmentSchema = z.object({
+	id: z.string().uuid(),
+	url: z.string().url(),
+	mimeType: z.string(),
+	size: z.number().int(),
+	name: z.string(),
+});
+export type WsAttachment = z.infer<typeof wsAttachmentSchema>;
+
+/** OG embed schema for WS messages */
+export const wsOgEmbedSchema = z.object({
+	url: z.string().url(),
+	title: z.string(),
+	description: z.string().nullable(),
+	image: z.string().url().nullable(),
+});
+export type WsOgEmbed = z.infer<typeof wsOgEmbedSchema>;
+
+/** Message type enum */
+export const wsMessageTypeSchema = z.enum(["TEXT", "FILE", "SYSTEM"]);
+export type WsMessageType = z.infer<typeof wsMessageTypeSchema>;
+
+/** Full message schema for WS (uses conversationId, not chatId) */
+export const wsMessageSchema = z.object({
+	id: z.string().uuid(),
+	conversationId: z.string().uuid(),
+	sender: wsUserSchema,
+	content: z.string().nullable(),
+	type: wsMessageTypeSchema,
+	attachments: z.array(wsAttachmentSchema),
+	ogEmbed: wsOgEmbedSchema.nullable(),
+	editedAt: z.string().datetime().nullable(),
+	deletedAt: z.string().datetime().nullable(),
+	createdAt: z.string().datetime(),
+});
+export type WsMessage = z.infer<typeof wsMessageSchema>;
 
 // ============================================================================
 // Client → Server Events
@@ -107,7 +151,7 @@ export type WsClientMessage = z.infer<typeof wsClientMessageSchema>;
 /** message:new - full message object broadcast */
 export const messageNewSchema = z.object({
 	event: z.literal("message:new"),
-	payload: messageSchema,
+	payload: wsMessageSchema,
 });
 export type MessageNew = z.infer<typeof messageNewSchema>;
 
@@ -172,15 +216,3 @@ export const wsServerMessageSchema = z.discriminatedUnion("event", [
 	wsErrorSchema,
 ]);
 export type WsServerMessage = z.infer<typeof wsServerMessageSchema>;
-
-// ============================================================================
-// Re-export message-related schemas for convenience
-// ============================================================================
-
-export {
-	attachmentSchema,
-	messageSchema,
-	messageTypeSchema,
-	ogEmbedSchema,
-	userSchema,
-};

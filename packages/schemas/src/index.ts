@@ -112,6 +112,17 @@ export {
 	type WsErrorCode,
 	type WsClientEvent,
 	type WsServerEvent,
+	// WebSocket-specific message types
+	wsUserSchema,
+	wsAttachmentSchema,
+	wsOgEmbedSchema,
+	wsMessageTypeSchema,
+	wsMessageSchema,
+	type WsUser,
+	type WsAttachment,
+	type WsOgEmbed,
+	type WsMessageType,
+	type WsMessage,
 	// Client → Server events
 	messageSendPayloadSchema,
 	messageSendSchema,
