@@ -1,23 +1,24 @@
-import express from "express";
-import helmet from "helmet";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import rateLimit from "express-rate-limit";
-import { env } from "./lib/env.js";
-import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
+import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
+import { env } from './lib/env.js';
+import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
+import routes from './routes/index.js';
 
 const app = express();
 
 // Trust proxy (for rate limiting headers behind reverse proxy)
-app.set("trust proxy", 1);
+app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet());
 app.use(
 	cors({
 		origin: env.CORS_ORIGIN,
-		credentials: true,
-	}),
+		credentials: true
+	})
 );
 
 // Rate limiting
@@ -29,25 +30,28 @@ app.use(
 		legacyHeaders: false,
 		message: {
 			error: {
-				code: "TOO_MANY_REQUESTS",
-				message: "Too many requests, please try again later",
-			},
-		},
-	}),
+				code: 'TOO_MANY_REQUESTS',
+				message: 'Too many requests, please try again later'
+			}
+		}
+	})
 );
 
 // Body parsing
-app.use(express.json({ limit: "10kb" }));
-app.use(express.urlencoded({ extended: false, limit: "10kb" }));
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: false, limit: '10kb' }));
 app.use(cookieParser());
 
 // Health check
-app.get("/health", (_req, res) => {
-	res.json({ status: "ok" });
+app.get('/health', (_req, res) => {
+	res.json({ status: 'ok' });
 });
 
-// TODO: Mount API routes here
-// app.use("/api", routes);
+// Static file serving for uploads
+app.use('/uploads', express.static('uploads'));
+
+// API routes
+app.use('/api', routes);
 
 // Error handling
 app.use(notFoundHandler);
