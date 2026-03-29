@@ -1,0 +1,1233 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "CommNode API",
+		"version": "0.0.1",
+		"description": "RESTful API for a realtime communication app."
+	},
+	"servers": [
+		{ "url": "http://localhost:3000/api", "description": "Development" }
+	],
+	"security": [{ "bearerAuth": [] }],
+	"components": {
+		"securitySchemes": {
+			"bearerAuth": {
+				"type": "http",
+				"scheme": "bearer",
+				"bearerFormat": "JWT"
+			}
+		},
+		"schemas": {
+			"Error": {
+				"type": "object",
+				"required": ["error"],
+				"properties": {
+					"error": {
+						"type": "object",
+						"required": ["code", "message"],
+						"properties": {
+							"code": { "type": "string", "examples": ["VALIDATION_FAILED"] },
+							"message": {
+								"type": "string",
+								"examples": ["Request validation failed"]
+							},
+							"details": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"field": { "type": "string" },
+										"code": { "type": "string" },
+										"message": { "type": "string" }
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"User": {
+				"type": "object",
+				"required": [
+					"id",
+					"email",
+					"username",
+					"displayName",
+					"createdAt",
+					"updatedAt"
+				],
+				"properties": {
+					"id": { "type": "string", "format": "uuid" },
+					"email": { "type": "string", "format": "email" },
+					"username": { "type": "string", "examples": ["jane_doe"] },
+					"displayName": { "type": "string", "examples": ["Jane Doe"] },
+					"avatarUrl": { "type": "string", "format": "uri" },
+					"createdAt": { "type": "string", "format": "date-time" },
+					"updatedAt": { "type": "string", "format": "date-time" }
+				}
+			},
+			"Friendship": {
+				"type": "object",
+				"required": [
+					"id",
+					"status",
+					"requester",
+					"addressee",
+					"createdAt",
+					"updatedAt"
+				],
+				"properties": {
+					"id": { "type": "string", "format": "uuid" },
+					"status": {
+						"type": "string",
+						"enum": ["PENDING", "ACCEPTED", "BLOCKED"]
+					},
+					"requester": { "$ref": "#/components/schemas/User" },
+					"addressee": { "$ref": "#/components/schemas/User" },
+					"createdAt": { "type": "string", "format": "date-time" },
+					"updatedAt": { "type": "string", "format": "date-time" }
+				}
+			},
+			"Chat": {
+				"type": "object",
+				"required": ["id", "type", "participants", "createdAt", "updatedAt"],
+				"properties": {
+					"id": { "type": "string", "format": "uuid" },
+					"type": { "type": "string", "enum": ["DIRECT", "GROUP"] },
+					"name": { "type": "string", "description": "Group chats only" },
+					"avatarUrl": { "type": "string", "format": "uri" },
+					"participants": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/Participant" }
+					},
+					"lastMessage": { "$ref": "#/components/schemas/Message" },
+					"createdAt": { "type": "string", "format": "date-time" },
+					"updatedAt": { "type": "string", "format": "date-time" }
+				}
+			},
+			"Participant": {
+				"type": "object",
+				"required": ["user", "role", "joinedAt"],
+				"properties": {
+					"user": { "$ref": "#/components/schemas/User" },
+					"role": { "type": "string", "enum": ["OWNER", "ADMIN", "MEMBER"] },
+					"joinedAt": { "type": "string", "format": "date-time" }
+				}
+			},
+			"Message": {
+				"type": "object",
+				"required": [
+					"id",
+					"chatId",
+					"sender",
+					"type",
+					"attachments",
+					"createdAt"
+				],
+				"properties": {
+					"id": { "type": "string", "format": "uuid" },
+					"chatId": { "type": "string", "format": "uuid" },
+					"sender": { "$ref": "#/components/schemas/User" },
+					"content": { "type": "string" },
+					"type": { "type": "string", "enum": ["TEXT", "FILE", "SYSTEM"] },
+					"attachments": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/Attachment" }
+					},
+					"ogEmbed": {
+						"type": "object",
+						"required": ["url", "title"],
+						"properties": {
+							"url": { "type": "string", "format": "uri" },
+							"title": { "type": "string" },
+							"description": { "type": "string" },
+							"image": { "type": "string", "format": "uri" }
+						}
+					},
+					"editedAt": { "type": "string", "format": "date-time" },
+					"deletedAt": { "type": "string", "format": "date-time" },
+					"createdAt": { "type": "string", "format": "date-time" }
+				}
+			},
+			"Attachment": {
+				"type": "object",
+				"required": ["id", "url", "mimeType", "size", "displayName"],
+				"properties": {
+					"id": { "type": "string", "format": "uuid" },
+					"url": { "type": "string", "format": "uri" },
+					"mimeType": { "type": "string", "examples": ["image/png"] },
+					"size": { "type": "integer", "description": "Size in bytes" },
+					"name": { "type": "string", "examples": ["screenshot.png"] }
+				}
+			},
+			"CursorPage": {
+				"type": "object",
+				"required": ["hasMore"],
+				"properties": {
+					"nextCursor": { "type": "string" },
+					"prevCursor": { "type": "string" },
+					"hasMore": { "type": "boolean" }
+				}
+			},
+			"OffsetPage": {
+				"type": "object",
+				"required": ["total", "page", "limit", "hasMore"],
+				"properties": {
+					"total": { "type": "integer" },
+					"page": { "type": "integer" },
+					"limit": { "type": "integer" },
+					"hasMore": { "type": "boolean" }
+				}
+			}
+		},
+		"responses": {
+			"Unauthorized": {
+				"description": "Missing or invalid JWT",
+				"content": {
+					"application/json": {
+						"schema": { "$ref": "#/components/schemas/Error" },
+						"example": {
+							"error": {
+								"code": "UNAUTHORIZED",
+								"message": "Invalid or expired token"
+							}
+						}
+					}
+				}
+			},
+			"Forbidden": {
+				"description": "Authenticated but insufficient permissions",
+				"content": {
+					"application/json": {
+						"schema": { "$ref": "#/components/schemas/Error" },
+						"example": {
+							"error": {
+								"code": "FORBIDDEN",
+								"message": "Insufficient permissions"
+							}
+						}
+					}
+				}
+			},
+			"NotFound": {
+				"description": "Resource not found",
+				"content": {
+					"application/json": {
+						"schema": { "$ref": "#/components/schemas/Error" },
+						"example": {
+							"error": { "code": "NOT_FOUND", "message": "Resource not found" }
+						}
+					}
+				}
+			},
+			"UnprocessableEntity": {
+				"description": "Validation error",
+				"content": {
+					"application/json": {
+						"schema": { "$ref": "#/components/schemas/Error" }
+					}
+				}
+			}
+		},
+		"parameters": {
+			"ChatId": {
+				"name": "id",
+				"in": "path",
+				"required": true,
+				"schema": { "type": "string", "format": "uuid" }
+			},
+			"UserId": {
+				"name": "uid",
+				"in": "path",
+				"required": true,
+				"schema": { "type": "string", "format": "uuid" }
+			},
+			"FriendshipId": {
+				"name": "id",
+				"in": "path",
+				"required": true,
+				"schema": { "type": "string", "format": "uuid" }
+			},
+			"CursorParam": {
+				"name": "cursor",
+				"in": "query",
+				"required": false,
+				"schema": { "type": "string" }
+			},
+			"LimitParam": {
+				"name": "limit",
+				"in": "query",
+				"required": false,
+				"schema": {
+					"type": "integer",
+					"minimum": 1,
+					"maximum": 100,
+					"default": 50
+				}
+			}
+		}
+	},
+	"paths": {
+		"/auth/register": {
+			"post": {
+				"tags": ["Auth"],
+				"summary": "Register with email and password",
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["email", "username", "displayName", "password"],
+								"properties": {
+									"email": { "type": "string", "format": "email" },
+									"username": {
+										"type": "string",
+										"minLength": 3,
+										"maxLength": 32,
+										"pattern": "^[a-z0-9_]+$"
+									},
+									"displayName": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 64
+									},
+									"password": {
+										"type": "string",
+										"minLength": 8,
+										"maxLength": 128
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Registration successful",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"accessToken": { "type": "string" },
+										"user": { "$ref": "#/components/schemas/User" }
+									}
+								}
+							}
+						},
+						"headers": {
+							"Set-Cookie": {
+								"schema": { "type": "string" },
+								"description": "httpOnly refresh token cookie"
+							}
+						}
+					},
+					"409": {
+						"description": "Email or username already taken",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Error" }
+							}
+						}
+					},
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
+				}
+			}
+		},
+		"/auth/login": {
+			"post": {
+				"tags": ["Auth"],
+				"summary": "Login with email and password",
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["email", "password"],
+								"properties": {
+									"email": { "type": "string", "format": "email" },
+									"password": { "type": "string" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Login successful",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"accessToken": { "type": "string" },
+										"user": { "$ref": "#/components/schemas/User" }
+									}
+								}
+							}
+						},
+						"headers": {
+							"Set-Cookie": {
+								"schema": { "type": "string" },
+								"description": "httpOnly refresh token cookie"
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
+				}
+			}
+		},
+		"/auth/logout": {
+			"post": {
+				"tags": ["Auth"],
+				"summary": "Logout and revoke refresh token",
+				"responses": {
+					"204": { "description": "Logged out successfully" },
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			}
+		},
+		"/auth/refresh": {
+			"post": {
+				"tags": ["Auth"],
+				"summary": "Rotate access token using refresh token cookie",
+				"security": [],
+				"responses": {
+					"200": {
+						"description": "New access token issued",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": { "accessToken": { "type": "string" } }
+								}
+							}
+						},
+						"headers": {
+							"Set-Cookie": {
+								"schema": { "type": "string" },
+								"description": "Rotated httpOnly refresh token cookie"
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			}
+		},
+		"/auth/google": {
+			"get": {
+				"tags": ["Auth"],
+				"summary": "Initiate Google OAuth flow",
+				"security": [],
+				"responses": {
+					"302": { "description": "Redirect to Google authorization page" }
+				}
+			}
+		},
+		"/auth/google/callback": {
+			"get": {
+				"tags": ["Auth"],
+				"summary": "Google OAuth callback — issues JWTs on success",
+				"security": [],
+				"parameters": [
+					{
+						"name": "code",
+						"in": "query",
+						"required": true,
+						"schema": { "type": "string" }
+					},
+					{
+						"name": "state",
+						"in": "query",
+						"required": false,
+						"schema": { "type": "string" }
+					}
+				],
+				"responses": {
+					"302": {
+						"description": "Redirect to frontend with access token",
+						"headers": {
+							"Set-Cookie": {
+								"schema": { "type": "string" },
+								"description": "httpOnly refresh token cookie"
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			}
+		},
+		"/users/me": {
+			"get": {
+				"tags": ["Users"],
+				"summary": "Get current user profile",
+				"responses": {
+					"200": {
+						"description": "Current user",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/User" }
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			},
+			"patch": {
+				"tags": ["Users"],
+				"summary": "Update current user profile",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"minProperties": 1,
+								"properties": {
+									"displayName": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 64
+									},
+									"username": {
+										"type": "string",
+										"minLength": 3,
+										"maxLength": 32,
+										"pattern": "^[a-z0-9_]+$"
+									},
+									"avatarUrl": { "type": "string", "format": "uri" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Updated user",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/User" }
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"409": {
+						"description": "Username already taken",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Error" }
+							}
+						}
+					},
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
+				}
+			},
+			"delete": {
+				"tags": ["Users"],
+				"summary": "Delete current user account",
+				"responses": {
+					"204": { "description": "Account deleted" },
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			}
+		},
+		"/users/search": {
+			"get": {
+				"tags": ["Users"],
+				"summary": "Search users by username",
+				"parameters": [
+					{
+						"name": "q",
+						"in": "query",
+						"required": true,
+						"schema": { "type": "string", "minLength": 1, "maxLength": 100 }
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"schema": { "type": "integer", "minimum": 1, "default": 1 }
+					},
+					{
+						"name": "limit",
+						"in": "query",
+						"schema": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 50,
+							"default": 20
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Search results",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/User" }
+										},
+										"pagination": { "$ref": "#/components/schemas/OffsetPage" }
+									}
+								}
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			}
+		},
+		"/friends": {
+			"get": {
+				"tags": ["Friends"],
+				"summary": "List accepted friends",
+				"responses": {
+					"200": {
+						"description": "Friend list",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/User" }
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			}
+		},
+		"/friends/requests": {
+			"post": {
+				"tags": ["Friends"],
+				"summary": "Send a friend request",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["addresseeId"],
+								"properties": {
+									"addresseeId": { "type": "string", "format": "uuid" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Friend request sent",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Friendship" }
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"409": {
+						"description": "Request already exists or users are blocked",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Error" }
+							}
+						}
+					},
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
+				}
+			},
+			"get": {
+				"tags": ["Friends"],
+				"summary": "List incoming pending friend requests",
+				"responses": {
+					"200": {
+						"description": "Pending requests",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/Friendship" }
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			}
+		},
+		"/friends/requests/{id}": {
+			"patch": {
+				"tags": ["Friends"],
+				"summary": "Accept or reject a friend request",
+				"parameters": [{ "$ref": "#/components/parameters/FriendshipId" }],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["action"],
+								"properties": {
+									"action": { "type": "string", "enum": ["accept", "reject"] }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Updated friendship",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Friendship" }
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" },
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
+				}
+			}
+		},
+		"/friends/{userId}": {
+			"delete": {
+				"tags": ["Friends"],
+				"summary": "Remove a friend",
+				"parameters": [
+					{
+						"name": "userId",
+						"in": "path",
+						"required": true,
+						"schema": { "type": "string", "format": "uuid" }
+					}
+				],
+				"responses": {
+					"204": { "description": "Friend removed" },
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"404": { "$ref": "#/components/responses/NotFound" }
+				}
+			}
+		},
+		"/friends/blocks": {
+			"post": {
+				"tags": ["Friends"],
+				"summary": "Block a user",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["targetId"],
+								"properties": {
+									"targetId": { "type": "string", "format": "uuid" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "User blocked",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Friendship" }
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
+				}
+			}
+		},
+		"/friends/blocks/{userId}": {
+			"delete": {
+				"tags": ["Friends"],
+				"summary": "Unblock a user",
+				"parameters": [
+					{
+						"name": "userId",
+						"in": "path",
+						"required": true,
+						"schema": { "type": "string", "format": "uuid" }
+					}
+				],
+				"responses": {
+					"204": { "description": "User unblocked" },
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"404": { "$ref": "#/components/responses/NotFound" }
+				}
+			}
+		},
+		"/chats": {
+			"get": {
+				"tags": ["Chats"],
+				"summary": "List user's chats",
+				"parameters": [
+					{ "$ref": "#/components/parameters/CursorParam" },
+					{ "$ref": "#/components/parameters/LimitParam" }
+				],
+				"responses": {
+					"200": {
+						"description": "Paginated chats",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/Chat" }
+										},
+										"pagination": { "$ref": "#/components/schemas/CursorPage" }
+									}
+								}
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			},
+			"post": {
+				"tags": ["Chats"],
+				"summary": "Create a DM or group chat",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"oneOf": [
+									{
+										"title": "Direct",
+										"type": "object",
+										"required": ["type", "participantId"],
+										"properties": {
+											"type": { "type": "string", "enum": ["DIRECT"] },
+											"participantId": { "type": "string", "format": "uuid" }
+										}
+									},
+									{
+										"title": "Group",
+										"type": "object",
+										"required": ["type", "name", "memberIds"],
+										"properties": {
+											"type": { "type": "string", "enum": ["GROUP"] },
+											"name": {
+												"type": "string",
+												"minLength": 1,
+												"maxLength": 100
+											},
+											"avatarUrl": { "type": "string", "format": "uri" },
+											"memberIds": {
+												"type": "array",
+												"items": { "type": "string", "format": "uuid" },
+												"minItems": 1,
+												"maxItems": 99
+											}
+										}
+									}
+								],
+								"discriminator": { "propertyName": "type" }
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Chat created",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Chat" }
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"409": {
+						"description": "DM with this user already exists",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Error" }
+							}
+						}
+					},
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
+				}
+			}
+		},
+		"/chats/{id}": {
+			"get": {
+				"tags": ["Chats"],
+				"summary": "Get chat details",
+				"parameters": [{ "$ref": "#/components/parameters/ChatId" }],
+				"responses": {
+					"200": {
+						"description": "Chat",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Chat" }
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" }
+				}
+			},
+			"patch": {
+				"tags": ["Chats"],
+				"summary": "Update group chat (ADMIN+)",
+				"parameters": [{ "$ref": "#/components/parameters/ChatId" }],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"minProperties": 1,
+								"properties": {
+									"name": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 100
+									},
+									"avatarUrl": { "type": "string", "format": "uri" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Updated chat",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Chat" }
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" },
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
+				}
+			},
+			"delete": {
+				"tags": ["Chats"],
+				"summary": "Delete group chat (OWNER only)",
+				"parameters": [{ "$ref": "#/components/parameters/ChatId" }],
+				"responses": {
+					"204": { "description": "Chat deleted" },
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" }
+				}
+			}
+		},
+		"/chats/{id}/participants": {
+			"get": {
+				"tags": ["Participants"],
+				"summary": "List chat participants",
+				"parameters": [{ "$ref": "#/components/parameters/ChatId" }],
+				"responses": {
+					"200": {
+						"description": "Participants",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/Participant" }
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" }
+				}
+			},
+			"post": {
+				"tags": ["Participants"],
+				"summary": "Add a member to group (ADMIN+)",
+				"parameters": [{ "$ref": "#/components/parameters/ChatId" }],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["userId"],
+								"properties": {
+									"userId": { "type": "string", "format": "uuid" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Participant added",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Participant" }
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" },
+					"409": {
+						"description": "User is already a participant",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Error" }
+							}
+						}
+					}
+				}
+			}
+		},
+		"/chats/{id}/participants/{uid}": {
+			"patch": {
+				"tags": ["Participants"],
+				"summary": "Change participant role (OWNER only)",
+				"parameters": [
+					{ "$ref": "#/components/parameters/ChatId" },
+					{ "$ref": "#/components/parameters/UserId" }
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["role"],
+								"properties": {
+									"role": { "type": "string", "enum": ["ADMIN", "MEMBER"] }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Updated participant",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Participant" }
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" }
+				}
+			},
+			"delete": {
+				"tags": ["Participants"],
+				"summary": "Remove a participant or self-leave",
+				"parameters": [
+					{ "$ref": "#/components/parameters/ChatId" },
+					{ "$ref": "#/components/parameters/UserId" }
+				],
+				"responses": {
+					"204": { "description": "Participant removed" },
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" }
+				}
+			}
+		},
+		"/chats/{id}/messages": {
+			"get": {
+				"tags": ["Messages"],
+				"summary": "Fetch message history (cursor-paginated)",
+				"description": "Read-only. Message mutations (send, edit, delete) are handled via WebSocket.",
+				"parameters": [
+					{ "$ref": "#/components/parameters/ChatId" },
+					{ "$ref": "#/components/parameters/CursorParam" },
+					{ "$ref": "#/components/parameters/LimitParam" }
+				],
+				"responses": {
+					"200": {
+						"description": "Paginated messages",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/Message" }
+										},
+										"pagination": { "$ref": "#/components/schemas/CursorPage" }
+									}
+								}
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" }
+				}
+			}
+		},
+		"/uploads": {
+			"post": {
+				"tags": ["Uploads"],
+				"summary": "Upload a file or media attachment",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"multipart/form-data": {
+							"schema": {
+								"type": "object",
+								"required": ["file"],
+								"properties": {
+									"file": { "type": "string", "format": "binary" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Upload successful",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"id": { "type": "string", "format": "uuid" },
+										"url": { "type": "string", "format": "uri" },
+										"mimeType": { "type": "string" },
+										"size": { "type": "integer" },
+										"name": { "type": "string" }
+									}
+								}
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
+				}
+			}
+		},
+		"/search": {
+			"get": {
+				"tags": ["Search"],
+				"summary": "Search messages or users",
+				"parameters": [
+					{
+						"name": "q",
+						"in": "query",
+						"required": true,
+						"schema": { "type": "string", "minLength": 1, "maxLength": 200 }
+					},
+					{
+						"name": "type",
+						"in": "query",
+						"required": true,
+						"schema": { "type": "string", "enum": ["messages", "users"] }
+					},
+					{
+						"name": "chatId",
+						"in": "query",
+						"required": false,
+						"description": "Scope message search to a specific chat",
+						"schema": { "type": "string", "format": "uuid" }
+					},
+					{
+						"name": "page",
+						"in": "query",
+						"schema": { "type": "integer", "minimum": 1, "default": 1 }
+					},
+					{
+						"name": "limit",
+						"in": "query",
+						"schema": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 50,
+							"default": 20
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Search results",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"data": {
+											"type": "array",
+											"items": {
+												"oneOf": [
+													{ "$ref": "#/components/schemas/Message" },
+													{ "$ref": "#/components/schemas/User" }
+												]
+											}
+										},
+										"pagination": { "$ref": "#/components/schemas/OffsetPage" }
+									}
+								}
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
+				}
+			}
+		}
+	},
+	"tags": [
+		{
+			"name": "Auth",
+			"description": "Registration, login, token management, and OAuth"
+		},
+		{ "name": "Users", "description": "User profile management and search" },
+		{
+			"name": "Friends",
+			"description": "Friend requests, blocking, and friend list"
+		},
+		{ "name": "Chats", "description": "DMs and group channel management" },
+		{
+			"name": "Participants",
+			"description": "Group membership and role management"
+		},
+		{
+			"name": "Messages",
+			"description": "Message history (read-only — mutations via WebSocket)"
+		},
+		{ "name": "Uploads", "description": "File and media uploads" },
+		{
+			"name": "Search",
+			"description": "Full-text search across messages and users"
+		}
+	]
+}

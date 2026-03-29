@@ -1,0 +1,614 @@
+{
+	"asyncapi": "3.1.0",
+	"info": {
+		"title": "CommNode WebSocket API",
+		"version": "0.0.1",
+		"description": "WebSocket API for realtime message delivery and mutations. All message send/edit/delete operations are handled exclusively here."
+	},
+	"servers": {
+		"development": {
+			"host": "localhost:3001",
+			"pathname": "/api/ws",
+			"protocol": "ws",
+			"description": "Local development WebSocket server",
+			"security": [
+				{
+					"$ref": "#/components/securitySchemes/bearerToken"
+				}
+			]
+		}
+	},
+	"channels": {
+		"/ws": {
+			"address": "/ws",
+			"messages": {
+				"clientToServer.message.0": {
+					"$ref": "#/components/messages/MessageSend"
+				},
+				"clientToServer.message.1": {
+					"$ref": "#/components/messages/MessageEdit"
+				},
+				"clientToServer.message.2": {
+					"$ref": "#/components/messages/MessageDelete"
+				},
+				"serverToClient.message.0": {
+					"$ref": "#/components/messages/MessageNew"
+				},
+				"serverToClient.message.1": {
+					"$ref": "#/components/messages/MessageEdited"
+				},
+				"serverToClient.message.2": {
+					"$ref": "#/components/messages/MessageDeleted"
+				},
+				"serverToClient.message.3": {
+					"$ref": "#/components/messages/Ack"
+				},
+				"serverToClient.message.4": {
+					"$ref": "#/components/messages/Error"
+				}
+			},
+			"description": "Single persistent WebSocket channel for all realtime events. Client must authenticate by passing a valid JWT as the `token` query parameter on connection."
+		}
+	},
+	"operations": {
+		"clientToServer": {
+			"action": "receive",
+			"channel": {
+				"$ref": "#/channels/~1ws"
+			},
+			"summary": "Events sent from the client to the server",
+			"description": "All message mutations and typing indicators are sent through this channel.",
+			"messages": [
+				{
+					"$ref": "#/channels/~1ws/messages/clientToServer.message.0"
+				},
+				{
+					"$ref": "#/channels/~1ws/messages/clientToServer.message.1"
+				},
+				{
+					"$ref": "#/channels/~1ws/messages/clientToServer.message.2"
+				}
+			]
+		},
+		"serverToClient": {
+			"action": "send",
+			"channel": {
+				"$ref": "#/channels/~1ws"
+			},
+			"summary": "Events sent from the server to the client",
+			"description": "The server pushes realtime updates to all connected participants of a conversation.",
+			"messages": [
+				{
+					"$ref": "#/channels/~1ws/messages/serverToClient.message.0"
+				},
+				{
+					"$ref": "#/channels/~1ws/messages/serverToClient.message.1"
+				},
+				{
+					"$ref": "#/channels/~1ws/messages/serverToClient.message.2"
+				},
+				{
+					"$ref": "#/channels/~1ws/messages/serverToClient.message.3"
+				},
+				{
+					"$ref": "#/channels/~1ws/messages/serverToClient.message.4"
+				}
+			]
+		}
+	},
+	"components": {
+		"securitySchemes": {
+			"bearerToken": {
+				"type": "httpApiKey",
+				"in": "query",
+				"name": "token",
+				"description": "JWT access token passed as a query parameter on connection: ?token=<accessToken>"
+			}
+		},
+		"schemas": {
+			"User": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid"
+					},
+					"username": {
+						"type": "string",
+						"example": "jane_doe"
+					},
+					"displayName": {
+						"type": "string",
+						"example": "Jane Doe"
+					},
+					"avatarUrl": {
+						"type": "string",
+						"format": "uri",
+						"nullable": true
+					}
+				}
+			},
+			"Attachment": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid"
+					},
+					"url": {
+						"type": "string",
+						"format": "uri"
+					},
+					"mimeType": {
+						"type": "string",
+						"example": "image/png"
+					},
+					"size": {
+						"type": "integer",
+						"description": "Size in bytes"
+					},
+					"name": {
+						"type": "string",
+						"example": "screenshot.png"
+					}
+				}
+			},
+			"OgEmbed": {
+				"type": "object",
+				"properties": {
+					"url": {
+						"type": "string",
+						"format": "uri"
+					},
+					"title": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string",
+						"nullable": true
+					},
+					"image": {
+						"type": "string",
+						"format": "uri",
+						"nullable": true
+					}
+				}
+			},
+			"Message": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid"
+					},
+					"conversationId": {
+						"type": "string",
+						"format": "uuid"
+					},
+					"sender": {
+						"$ref": "#/components/schemas/User"
+					},
+					"content": {
+						"type": "string",
+						"nullable": true
+					},
+					"type": {
+						"type": "string",
+						"enum": ["TEXT", "FILE", "SYSTEM"]
+					},
+					"attachments": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Attachment"
+						}
+					},
+					"ogEmbed": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/OgEmbed"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"editedAt": {
+						"type": "string",
+						"format": "date-time",
+						"nullable": true
+					},
+					"deletedAt": {
+						"type": "string",
+						"format": "date-time",
+						"nullable": true
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "date-time"
+					}
+				}
+			},
+			"RequestId": {
+				"type": "string",
+				"format": "uuid",
+				"description": "Client-generated unique ID to correlate requests with ack/error responses"
+			}
+		},
+		"messages": {
+			"MessageSend": {
+				"name": "message:send",
+				"title": "Send a message",
+				"summary": "Client sends a new message to a conversation",
+				"payload": {
+					"type": "object",
+					"required": ["event", "requestId", "payload"],
+					"properties": {
+						"event": {
+							"type": "string",
+							"const": "message:send"
+						},
+						"requestId": {
+							"$ref": "#/components/schemas/RequestId"
+						},
+						"payload": {
+							"type": "object",
+							"required": ["conversationId"],
+							"properties": {
+								"conversationId": {
+									"type": "string",
+									"format": "uuid"
+								},
+								"content": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 4000,
+									"description": "Required if no attachmentIds"
+								},
+								"attachmentIds": {
+									"type": "array",
+									"items": {
+										"type": "string",
+										"format": "uuid"
+									},
+									"maxItems": 10,
+									"description": "IDs from the /uploads REST endpoint. Required if no content."
+								}
+							}
+						}
+					}
+				},
+				"examples": [
+					{
+						"name": "Text message",
+						"payload": {
+							"event": "message:send",
+							"requestId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+							"payload": {
+								"conversationId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+								"content": "Hey, how's it going?"
+							}
+						}
+					},
+					{
+						"name": "File message",
+						"payload": {
+							"event": "message:send",
+							"requestId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+							"payload": {
+								"conversationId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+								"attachmentIds": ["d4e5f6a7-b8c9-0123-defa-234567890123"]
+							}
+						}
+					}
+				]
+			},
+			"MessageEdit": {
+				"name": "message:edit",
+				"title": "Edit a message",
+				"summary": "Client edits the content of a previously sent message (sender only)",
+				"payload": {
+					"type": "object",
+					"required": ["event", "requestId", "payload"],
+					"properties": {
+						"event": {
+							"type": "string",
+							"const": "message:edit"
+						},
+						"requestId": {
+							"$ref": "#/components/schemas/RequestId"
+						},
+						"payload": {
+							"type": "object",
+							"required": ["messageId", "content"],
+							"properties": {
+								"messageId": {
+									"type": "string",
+									"format": "uuid"
+								},
+								"content": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 4000
+								}
+							}
+						}
+					}
+				},
+				"examples": [
+					{
+						"name": "Edit message",
+						"payload": {
+							"event": "message:edit",
+							"requestId": "e5f6a7b8-c9d0-1234-efab-345678901234",
+							"payload": {
+								"messageId": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+								"content": "Hey, how's it going? (edited)"
+							}
+						}
+					}
+				]
+			},
+			"MessageDelete": {
+				"name": "message:delete",
+				"title": "Delete a message",
+				"summary": "Client soft-deletes a message. Allowed for sender or ADMIN+ role.",
+				"payload": {
+					"type": "object",
+					"required": ["event", "requestId", "payload"],
+					"properties": {
+						"event": {
+							"type": "string",
+							"const": "message:delete"
+						},
+						"requestId": {
+							"$ref": "#/components/schemas/RequestId"
+						},
+						"payload": {
+							"type": "object",
+							"required": ["messageId"],
+							"properties": {
+								"messageId": {
+									"type": "string",
+									"format": "uuid"
+								}
+							}
+						}
+					}
+				},
+				"examples": [
+					{
+						"name": "Delete message",
+						"payload": {
+							"event": "message:delete",
+							"requestId": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+							"payload": {
+								"messageId": "f6a7b8c9-d0e1-2345-fabc-456789012345"
+							}
+						}
+					}
+				]
+			},
+			"MessageNew": {
+				"name": "message:new",
+				"title": "New message received",
+				"summary": "Server broadcasts a newly sent message to all participants in the conversation",
+				"payload": {
+					"type": "object",
+					"required": ["event", "payload"],
+					"properties": {
+						"event": {
+							"type": "string",
+							"const": "message:new"
+						},
+						"payload": {
+							"$ref": "#/components/schemas/Message"
+						}
+					}
+				},
+				"examples": [
+					{
+						"name": "New text message",
+						"payload": {
+							"event": "message:new",
+							"payload": {
+								"id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+								"conversationId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+								"sender": {
+									"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+									"username": "jane_doe",
+									"displayName": "Jane Doe",
+									"avatarUrl": null
+								},
+								"content": "Hey, how's it going?",
+								"type": "TEXT",
+								"attachments": [],
+								"ogEmbed": null,
+								"editedAt": null,
+								"deletedAt": null,
+								"createdAt": "2026-03-25T10:00:00Z"
+							}
+						}
+					}
+				]
+			},
+			"MessageEdited": {
+				"name": "message:edited",
+				"title": "Message edited",
+				"summary": "Server broadcasts an edit to all participants in the conversation",
+				"payload": {
+					"type": "object",
+					"required": ["event", "payload"],
+					"properties": {
+						"event": {
+							"type": "string",
+							"const": "message:edited"
+						},
+						"payload": {
+							"type": "object",
+							"required": ["messageId", "content", "editedAt"],
+							"properties": {
+								"messageId": {
+									"type": "string",
+									"format": "uuid"
+								},
+								"content": {
+									"type": "string"
+								},
+								"editedAt": {
+									"type": "string",
+									"format": "date-time"
+								}
+							}
+						}
+					}
+				},
+				"examples": [
+					{
+						"name": "Message edited",
+						"payload": {
+							"event": "message:edited",
+							"payload": {
+								"messageId": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+								"content": "Hey, how's it going? (edited)",
+								"editedAt": "2026-03-25T10:01:00Z"
+							}
+						}
+					}
+				]
+			},
+			"MessageDeleted": {
+				"name": "message:deleted",
+				"title": "Message deleted",
+				"summary": "Server broadcasts a soft-delete to all participants in the conversation",
+				"payload": {
+					"type": "object",
+					"required": ["event", "payload"],
+					"properties": {
+						"event": {
+							"type": "string",
+							"const": "message:deleted"
+						},
+						"payload": {
+							"type": "object",
+							"required": ["messageId"],
+							"properties": {
+								"messageId": {
+									"type": "string",
+									"format": "uuid"
+								}
+							}
+						}
+					}
+				},
+				"examples": [
+					{
+						"name": "Message deleted",
+						"payload": {
+							"event": "message:deleted",
+							"payload": {
+								"messageId": "f6a7b8c9-d0e1-2345-fabc-456789012345"
+							}
+						}
+					}
+				]
+			},
+			"Ack": {
+				"name": "ack",
+				"title": "Acknowledgement",
+				"summary": "Server confirms successful processing of a client action. Matches the requestId sent by the client.",
+				"payload": {
+					"type": "object",
+					"required": ["event", "payload"],
+					"properties": {
+						"event": {
+							"type": "string",
+							"const": "ack"
+						},
+						"payload": {
+							"type": "object",
+							"required": ["requestId"],
+							"properties": {
+								"requestId": {
+									"$ref": "#/components/schemas/RequestId"
+								}
+							}
+						}
+					}
+				},
+				"examples": [
+					{
+						"name": "Ack",
+						"payload": {
+							"event": "ack",
+							"payload": {
+								"requestId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+							}
+						}
+					}
+				]
+			},
+			"Error": {
+				"name": "error",
+				"title": "Error",
+				"summary": "Server reports a failed operation back to the originating client. Matches the requestId if the error is tied to a specific client action.",
+				"payload": {
+					"type": "object",
+					"required": ["event", "payload"],
+					"properties": {
+						"event": {
+							"type": "string",
+							"const": "error"
+						},
+						"payload": {
+							"type": "object",
+							"required": ["code", "message"],
+							"properties": {
+								"requestId": {
+									"$ref": "#/components/schemas/RequestId",
+									"description": "Present when the error is tied to a specific client request"
+								},
+								"code": {
+									"type": "string",
+									"enum": [
+										"UNAUTHORIZED",
+										"FORBIDDEN",
+										"NOT_FOUND",
+										"VALIDATION_FAILED",
+										"INTERNAL_ERROR"
+									]
+								},
+								"message": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				},
+				"examples": [
+					{
+						"name": "Forbidden error",
+						"payload": {
+							"event": "error",
+							"payload": {
+								"requestId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+								"code": "FORBIDDEN",
+								"message": "You are not a participant of this conversation"
+							}
+						}
+					},
+					{
+						"name": "Validation error",
+						"payload": {
+							"event": "error",
+							"payload": {
+								"requestId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+								"code": "VALIDATION_FAILED",
+								"message": "Message must have content or attachments"
+							}
+						}
+					}
+				]
+			}
+		}
+	}
+}
