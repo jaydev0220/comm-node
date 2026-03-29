@@ -11,7 +11,6 @@ const app = express();
 
 // Trust proxy (for rate limiting headers behind reverse proxy)
 app.set('trust proxy', 1);
-
 // Security middleware
 app.use(helmet());
 app.use(
@@ -20,7 +19,6 @@ app.use(
 		credentials: true
 	})
 );
-
 // Rate limiting
 app.use(
 	rateLimit({
@@ -36,27 +34,21 @@ app.use(
 		}
 	})
 );
-
 // Body parsing
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false, limit: '10kb' }));
 app.use(cookieParser());
-
 // Health check
 app.get('/health', (_req, res) => {
 	res.json({ status: 'ok' });
 });
-
 // Static file serving for uploads
 app.use('/uploads', express.static('uploads'));
-
 // API routes
 app.use('/api', routes);
-
 // Error handling
 app.use(notFoundHandler);
 app.use(errorHandler);
-
 // Start server
 app.listen(env.PORT, () => {
 	console.log(`🚀 Server running on http://localhost:${env.PORT}`);

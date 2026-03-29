@@ -7,7 +7,6 @@ import { listMessagesParamsSchema } from '@packages/schemas';
 const router = Router({ mergeParams: true }); // Access :id from parent
 
 router.use(authenticate);
-
 router.get('/', validateQuery(listMessagesParamsSchema), messagesController.listMessages);
 
 export default router;

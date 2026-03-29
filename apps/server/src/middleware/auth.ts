@@ -39,7 +39,6 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
 	if (!payload) {
 		throw errors.unauthorized('Invalid or expired token');
 	}
-
 	if (payload.type !== 'access') {
 		throw errors.unauthorized('Invalid token type');
 	}
@@ -58,6 +57,7 @@ export const optionalAuth: RequestHandler = async (req, _res, next) => {
 
 	if (token) {
 		const payload = await verifyToken(token);
+
 		if (payload?.type === 'access') {
 			req.user = payload;
 		}

@@ -7,7 +7,6 @@ import { authenticate } from '../middleware/auth.js';
 const router = Router();
 
 router.use(authenticate);
-
 router.get('/me', usersController.getMe);
 router.patch('/me', validateBody(updateUserRequestSchema), usersController.updateMe);
 router.delete('/me', usersController.deleteMe);

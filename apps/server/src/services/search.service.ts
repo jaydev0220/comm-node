@@ -18,7 +18,6 @@ const formatUser = (user: {
 	createdAt: user.createdAt.toISOString(),
 	updatedAt: user.updatedAt.toISOString()
 });
-
 const formatAttachment = (a: {
 	id: string;
 	url: string;
@@ -32,7 +31,6 @@ const formatAttachment = (a: {
 	size: a.size,
 	name: a.name
 });
-
 const formatMessage = (m: {
 	id: string;
 	conversationId: string;
@@ -77,7 +75,6 @@ export const searchUsers = async (
 ): Promise<{ data: User[]; pagination: OffsetPage }> => {
 	const { q, page = 1, limit = 20 } = params;
 	const skip = (page - 1) * limit;
-
 	const [users, total] = await Promise.all([
 		prisma.user.findMany({
 			where: {
@@ -109,7 +106,6 @@ export const searchUsers = async (
 			}
 		})
 	]);
-
 	return {
 		data: users.map(formatUser),
 		pagination: {
@@ -127,13 +123,11 @@ export const searchMessages = async (
 ): Promise<{ data: Message[]; pagination: OffsetPage }> => {
 	const { q, chatId, page = 1, limit = 20 } = params;
 	const skip = (page - 1) * limit;
-
 	const userChats = await prisma.conversationParticipant.findMany({
 		where: { userId },
 		select: { conversationId: true }
 	});
 	const chatIds = userChats.map((c) => c.conversationId);
-
 	const targetChatIds = chatId ? [chatId].filter((id) => chatIds.includes(id)) : chatIds;
 
 	if (targetChatIds.length === 0) {
@@ -166,7 +160,6 @@ export const searchMessages = async (
 			}
 		})
 	]);
-
 	return {
 		data: messages.map(formatMessage),
 		pagination: {

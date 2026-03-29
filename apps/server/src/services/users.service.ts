@@ -12,6 +12,7 @@ export const updateUser = async (id: string, data: UpdateUserRequest): Promise<U
 		const existing = await prisma.user.findFirst({
 			where: { username: data.username, NOT: { id } }
 		});
+
 		if (existing) {
 			throw errors.conflict('Username already taken');
 		}
@@ -19,6 +20,7 @@ export const updateUser = async (id: string, data: UpdateUserRequest): Promise<U
 
 	// Filter out undefined values for Prisma compatibility
 	const updateData: Record<string, string> = {};
+
 	if (data.username !== undefined) updateData['username'] = data.username;
 	if (data.displayName !== undefined) updateData['displayName'] = data.displayName;
 	if (data.avatarUrl !== undefined) updateData['avatarUrl'] = data.avatarUrl;
@@ -39,14 +41,12 @@ export const searchUsers = async (
 ): Promise<{ data: User[]; pagination: OffsetPage }> => {
 	const { q, page, limit } = params;
 	const skip = (page - 1) * limit;
-
 	const whereClause = {
 		OR: [
 			{ username: { contains: q, mode: 'insensitive' as const } },
 			{ displayName: { contains: q, mode: 'insensitive' as const } }
 		]
 	};
-
 	const [users, total] = await Promise.all([
 		prisma.user.findMany({
 			where: whereClause,
@@ -56,7 +56,6 @@ export const searchUsers = async (
 		}),
 		prisma.user.count({ where: whereClause })
 	]);
-
 	return {
 		data: users.map(formatUser),
 		pagination: {

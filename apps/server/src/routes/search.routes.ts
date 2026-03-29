@@ -7,7 +7,6 @@ import { searchParamsSchema } from '@packages/schemas';
 const router = Router();
 
 router.use(authenticate);
-
 router.get('/', validateQuery(searchParamsSchema), searchController.search);
 
 export default router;

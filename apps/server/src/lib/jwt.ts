@@ -14,6 +14,7 @@ export interface TokenPayload {
  */
 const parseDuration = (duration: string): number => {
 	const match = duration.match(/^(\d+)([smhd])$/);
+
 	if (!match || !match[1] || !match[2]) {
 		throw new Error(`Invalid duration format: ${duration}`);
 	}
@@ -40,7 +41,6 @@ const parseDuration = (duration: string): number => {
  */
 export const signAccessToken = async (userId: string, email: string): Promise<string> => {
 	const expiresIn = parseDuration(env.JWT_ACCESS_EXPIRES_IN);
-
 	return new jose.SignJWT({ email, type: 'access' })
 		.setProtectedHeader({ alg: 'HS256' })
 		.setSubject(userId)
@@ -54,7 +54,6 @@ export const signAccessToken = async (userId: string, email: string): Promise<st
  */
 export const signRefreshToken = async (userId: string, email: string): Promise<string> => {
 	const expiresIn = parseDuration(env.JWT_REFRESH_EXPIRES_IN);
-
 	return new jose.SignJWT({ email, type: 'refresh' })
 		.setProtectedHeader({ alg: 'HS256' })
 		.setSubject(userId)
@@ -74,7 +73,6 @@ export const verifyToken = async (token: string): Promise<TokenPayload | null> =
 		if (!payload.sub || !payload['email'] || !payload['type']) {
 			return null;
 		}
-
 		return {
 			sub: payload.sub,
 			email: payload['email'] as string,

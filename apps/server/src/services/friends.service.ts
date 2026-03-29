@@ -13,7 +13,6 @@ export const listFriends = async (userId: string): Promise<User[]> => {
 			addressee: true
 		}
 	});
-
 	return friendships.map((f) => {
 		const friend = f.requesterId === userId ? f.addressee : f.requester;
 		return formatUser(friend);
@@ -56,6 +55,7 @@ export const sendFriendRequest = async (
 		if (existing.status === 'BLOCKED') {
 			throw errors.conflict('Cannot send request - blocked');
 		}
+
 		throw errors.conflict('Friend request already exists');
 	}
 
@@ -79,11 +79,9 @@ export const respondToRequest = async (
 	if (!friendship || friendship.addresseeId !== userId) {
 		throw errors.notFound('Friend request not found');
 	}
-
 	if (friendship.status !== 'PENDING') {
 		throw errors.conflict('Request already processed');
 	}
-
 	if (action === 'reject') {
 		await prisma.friendship.delete({ where: { id: requestId } });
 		return null;
@@ -169,7 +167,6 @@ const formatUser = (user: {
 	createdAt: user.createdAt.toISOString(),
 	updatedAt: user.updatedAt.toISOString()
 });
-
 const formatFriendship = (f: {
 	id: string;
 	status: string;

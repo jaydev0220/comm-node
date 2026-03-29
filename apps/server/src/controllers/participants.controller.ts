@@ -28,7 +28,6 @@ const formatUser = (user: {
 	createdAt: user.createdAt.toISOString(),
 	updatedAt: user.updatedAt.toISOString()
 });
-
 const formatParticipant = (p: {
 	user: {
 		id: string;
@@ -52,8 +51,8 @@ const formatParticipant = (p: {
 export const listParticipants: RequestHandler = async (req, res) => {
 	const chatId = req.params['id'] as string;
 	const userId = req.user!.sub;
-
 	const role = await getParticipantRole(userId, chatId);
+
 	if (!role) {
 		throw errors.notFound('Chat not found or not a member');
 	}
@@ -73,12 +72,11 @@ export const addParticipant: RequestHandler = async (req, res) => {
 	const chatId = req.params['id'] as string;
 	const currentUserId = req.user!.sub;
 	const { userId: targetUserId } = req.body as AddParticipantRequest;
-
 	const currentRole = await getParticipantRole(currentUserId, chatId);
+
 	if (!currentRole) {
 		throw errors.notFound('Chat not found or not a member');
 	}
-
 	if (currentRole === 'MEMBER') {
 		throw errors.forbidden('Only admins and owners can add participants');
 	}
@@ -92,6 +90,7 @@ export const addParticipant: RequestHandler = async (req, res) => {
 	}
 
 	const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+
 	if (!targetUser) {
 		throw errors.notFound('User not found');
 	}
@@ -113,16 +112,14 @@ export const updateRole: RequestHandler = async (req, res) => {
 	const targetUserId = req.params['uid'] as string;
 	const currentUserId = req.user!.sub;
 	const { role: newRole } = req.body as UpdateParticipantRoleRequest;
-
 	const currentRole = await getParticipantRole(currentUserId, chatId);
+
 	if (!currentRole) {
 		throw errors.notFound('Chat not found or not a member');
 	}
-
 	if (currentRole !== 'OWNER') {
 		throw errors.forbidden('Only owners can update participant roles');
 	}
-
 	if (targetUserId === currentUserId) {
 		throw errors.badRequest('Cannot change your own role');
 	}
@@ -134,7 +131,6 @@ export const updateRole: RequestHandler = async (req, res) => {
 	if (!targetParticipant) {
 		throw errors.notFound('Participant not found');
 	}
-
 	if (targetParticipant.role === 'OWNER') {
 		throw errors.forbidden('Cannot change the role of an owner');
 	}
@@ -152,8 +148,8 @@ export const removeParticipant: RequestHandler = async (req, res) => {
 	const chatId = req.params['id'] as string;
 	const targetUserId = req.params['uid'] as string;
 	const currentUserId = req.user!.sub;
-
 	const currentRole = await getParticipantRole(currentUserId, chatId);
+
 	if (!currentRole) {
 		throw errors.notFound('Chat not found or not a member');
 	}
@@ -178,12 +174,10 @@ export const removeParticipant: RequestHandler = async (req, res) => {
 		if (!targetParticipant) {
 			throw errors.notFound('Participant not found');
 		}
-
 		// ADMIN can only remove MEMBER, not OWNER or other ADMIN
 		if (currentRole === 'ADMIN' && targetParticipant.role !== 'MEMBER') {
 			throw errors.forbidden('Admins can only remove members');
 		}
-
 		// OWNER cannot remove themselves via this path (handled above)
 		if (targetParticipant.role === 'OWNER') {
 			throw errors.forbidden('Cannot remove the owner');
@@ -193,6 +187,5 @@ export const removeParticipant: RequestHandler = async (req, res) => {
 	await prisma.conversationParticipant.delete({
 		where: { conversationId_userId: { conversationId: chatId, userId: targetUserId } }
 	});
-
 	res.status(204).send();
 };

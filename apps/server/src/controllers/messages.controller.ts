@@ -20,7 +20,6 @@ const formatUser = (user: {
 	createdAt: user.createdAt.toISOString(),
 	updatedAt: user.updatedAt.toISOString()
 });
-
 const formatAttachment = (a: {
 	id: string;
 	url: string;
@@ -34,7 +33,6 @@ const formatAttachment = (a: {
 	size: a.size,
 	name: a.name
 });
-
 const formatMessage = (m: {
 	id: string;
 	conversationId: string;
@@ -78,7 +76,6 @@ export const listMessages: RequestHandler = async (req, res) => {
 	const userId = req.user!.sub;
 	const { cursor, limit = '50' } = req.query as { cursor?: string; limit?: string };
 	const limitNum = Number(limit);
-
 	// Check if user is participant
 	const participant = await prisma.conversationParticipant.findUnique({
 		where: { conversationId_userId: { conversationId: chatId, userId } }
@@ -98,10 +95,8 @@ export const listMessages: RequestHandler = async (req, res) => {
 		take: limitNum + 1,
 		...(cursor ? { cursor: { id: cursor }, skip: 1 } : {})
 	});
-
 	const hasMore = messages.length > limitNum;
 	const data = hasMore ? messages.slice(0, -1) : messages;
-
 	const pagination: CursorPage = {
 		hasMore,
 		...(hasMore && data.length > 0 && { nextCursor: data[data.length - 1]?.id })

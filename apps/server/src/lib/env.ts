@@ -18,7 +18,6 @@ const envSchema = z.object({
 	GOOGLE_CLIENT_SECRET: z.string().optional(),
 	GOOGLE_CALLBACK_URL: z.string().url().optional()
 });
-
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {

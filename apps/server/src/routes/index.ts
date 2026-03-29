@@ -12,21 +12,16 @@ const router = Router();
 
 // Auth routes (public)
 router.use('/auth', authRoutes);
-
 // User routes
 router.use('/users', usersRoutes);
-
 // Friends routes
 router.use('/friends', friendsRoutes);
-
 // Chat routes with nested participants and messages
 router.use('/chats', chatsRoutes);
 router.use('/chats/:id/participants', participantsRoutes);
 router.use('/chats/:id/messages', messagesRoutes);
-
 // Uploads
 router.use('/uploads', uploadsRoutes);
-
 // Search
 router.use('/search', searchRoutes);
 

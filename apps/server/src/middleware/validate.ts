@@ -32,15 +32,16 @@ export const validate = (options: ValidateOptions): RequestHandler => {
 
 		if (options.body) {
 			const result = options.body.safeParse(req.body);
+
 			if (!result.success) {
 				allDetails.push(...formatZodError(result.error));
 			} else {
 				req.body = result.data;
 			}
 		}
-
 		if (options.query) {
 			const result = options.query.safeParse(req.query);
+
 			if (!result.success) {
 				allDetails.push(...formatZodError(result.error));
 			} else {
@@ -48,9 +49,9 @@ export const validate = (options: ValidateOptions): RequestHandler => {
 				req.query = result.data as typeof req.query;
 			}
 		}
-
 		if (options.params) {
 			const result = options.params.safeParse(req.params);
+
 			if (!result.success) {
 				allDetails.push(...formatZodError(result.error));
 			} else {
@@ -58,7 +59,6 @@ export const validate = (options: ValidateOptions): RequestHandler => {
 				req.params = result.data as typeof req.params;
 			}
 		}
-
 		if (allDetails.length > 0) {
 			throw errors.validationFailed(allDetails);
 		}

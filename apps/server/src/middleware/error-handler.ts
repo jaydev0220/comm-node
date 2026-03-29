@@ -14,8 +14,10 @@ export interface AppErrorOptions {
  */
 export const createAppError = (options: AppErrorOptions): Error & AppErrorOptions => {
 	const error = new Error(options.message) as Error & AppErrorOptions;
+
 	error.code = options.code;
 	error.status = options.status;
+
 	if (options.details) {
 		error.details = options.details;
 	}
@@ -91,7 +93,6 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 		});
 		return;
 	}
-
 	// Log unexpected errors in development
 	if (process.env['NODE_ENV'] !== 'production') {
 		console.error('Unhandled error:', err);

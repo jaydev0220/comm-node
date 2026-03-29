@@ -1,7 +1,5 @@
 import { createHash, randomBytes } from 'crypto';
-
 import type { LoginRequest, RegisterRequest, User } from '@packages/schemas';
-
 import { signAccessToken } from '../lib/jwt.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { prisma } from '../lib/db.js';
@@ -9,7 +7,6 @@ import { errors } from '../middleware/error-handler.js';
 
 // Hash refresh token for storage
 const hashToken = (token: string): string => createHash('sha256').update(token).digest('hex');
-
 // Helper to format user for API response
 const formatUser = (user: {
 	id: string;
@@ -51,7 +48,6 @@ export const registerUser = async (
 			passwordHash
 		}
 	});
-
 	const accessToken = await signAccessToken(user.id, user.email);
 	const refreshToken = randomBytes(32).toString('hex');
 
@@ -62,7 +58,6 @@ export const registerUser = async (
 			expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
 		}
 	});
-
 	return { user: formatUser(user), accessToken, refreshToken };
 };
 
@@ -76,6 +71,7 @@ export const loginUser = async (
 	}
 
 	const valid = await verifyPassword(data.password, user.passwordHash);
+
 	if (!valid) {
 		throw errors.unauthorized('Invalid email or password');
 	}
@@ -90,7 +86,6 @@ export const loginUser = async (
 			expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 		}
 	});
-
 	return { user: formatUser(user), accessToken, refreshToken };
 };
 
@@ -120,11 +115,11 @@ export const refreshTokens = async (
 			expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 		}
 	});
-
 	return { accessToken, refreshToken: newRefreshToken };
 };
 
 export const logoutUser = async (refreshToken: string): Promise<void> => {
 	const tokenHash = hashToken(refreshToken);
+
 	await prisma.refreshToken.deleteMany({ where: { tokenHash } });
 };

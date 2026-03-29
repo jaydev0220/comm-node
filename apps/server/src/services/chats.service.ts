@@ -17,7 +17,6 @@ export const listChats = async (
 	params: ListChatsParams
 ): Promise<{ data: Chat[]; pagination: CursorPage }> => {
 	const { cursor, limit } = params;
-
 	const conversations = await prisma.conversation.findMany({
 		where: {
 			participants: { some: { userId } }
@@ -36,10 +35,8 @@ export const listChats = async (
 		take: limit + 1,
 		...(cursor && { cursor: { id: cursor }, skip: 1 })
 	});
-
 	const hasMore = conversations.length > limit;
 	const data = hasMore ? conversations.slice(0, -1) : conversations;
-
 	return {
 		data: data.map(formatChat),
 		pagination: {
@@ -61,6 +58,7 @@ export const createChat = async (userId: string, data: CreateChatRequest): Promi
 				]
 			}
 		});
+
 		if (existing) {
 			throw errors.conflict('DM already exists with this user');
 		}
@@ -131,10 +129,10 @@ export const getChat = async (userId: string, chatId: string): Promise<Chat> => 
 	}
 
 	const isParticipant = conversation.participants.some((p) => p.userId === userId);
+
 	if (!isParticipant) {
 		throw errors.forbidden('You are not a participant of this chat');
 	}
-
 	return formatChat(conversation);
 };
 
@@ -151,18 +149,19 @@ export const updateChat = async (
 	if (!conversation) {
 		throw errors.notFound('Chat not found');
 	}
-
 	if (conversation.type !== 'GROUP') {
 		throw errors.forbidden('Cannot update DM');
 	}
 
 	const participant = conversation.participants.find((p) => p.userId === userId);
+
 	if (!participant || participant.role === 'MEMBER') {
 		throw errors.forbidden('Only admins can update chat');
 	}
 
 	// Filter out undefined values for Prisma compatibility
 	const updateData: Record<string, string | null> = {};
+
 	if (data.name !== undefined) updateData['name'] = data.name;
 	if (data.avatarUrl !== undefined) updateData['avatarUrl'] = data.avatarUrl ?? null;
 
@@ -190,12 +189,12 @@ export const deleteChat = async (userId: string, chatId: string): Promise<void> 
 	if (!conversation) {
 		throw errors.notFound('Chat not found');
 	}
-
 	if (conversation.type !== 'GROUP') {
 		throw errors.forbidden('Cannot delete DM');
 	}
 
 	const participant = conversation.participants.find((p) => p.userId === userId);
+
 	if (!participant || participant.role !== 'OWNER') {
 		throw errors.forbidden('Only owner can delete chat');
 	}
@@ -231,7 +230,6 @@ const formatUser = (user: {
 	createdAt: user.createdAt.toISOString(),
 	updatedAt: user.updatedAt.toISOString()
 });
-
 const formatParticipant = (p: {
 	user: {
 		id: string;
@@ -249,7 +247,6 @@ const formatParticipant = (p: {
 	role: p.role,
 	joinedAt: p.joinedAt.toISOString()
 });
-
 const formatAttachment = (a: {
 	id: string;
 	url: string;
@@ -263,7 +260,6 @@ const formatAttachment = (a: {
 	size: a.size,
 	name: a.name
 });
-
 const formatMessage = (m: {
 	id: string;
 	conversationId: string;
@@ -301,7 +297,6 @@ const formatMessage = (m: {
 	deletedAt: m.deletedAt?.toISOString(),
 	createdAt: m.createdAt.toISOString()
 });
-
 const formatChat = (c: {
 	id: string;
 	type: 'DIRECT' | 'GROUP';
