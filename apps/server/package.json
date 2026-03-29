@@ -8,7 +8,13 @@
 		"start": "node build/index.js",
 		"lint": "eslint .",
 		"format": "prettier --write --ignore-path ../../.prettierignore .",
-		"type-check": "tsc --noEmit"
+		"type-check": "tsc --noEmit",
+		"db:generate": "prisma generate",
+		"db:migrate:dev": "prisma migrate dev",
+		"db:migrate:deploy": "prisma migrate deploy",
+		"db:studio": "prisma studio",
+		"db:push": "prisma db push",
+		"db:seed": "prisma db seed"
 	},
 	"dependencies": {
 		"@prisma/adapter-pg": "catalog:server",
