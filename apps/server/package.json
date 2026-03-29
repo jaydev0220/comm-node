@@ -30,6 +30,7 @@
 		"jose": "catalog:server",
 		"multer": "catalog:server",
 		"pg": "catalog:server",
+		"ws": "catalog:server",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
@@ -41,6 +42,7 @@
 		"@types/multer": "catalog:server",
 		"@types/node": "catalog:",
 		"@types/pg": "catalog:server",
+		"@types/ws": "catalog:server",
 		"dotenv": "catalog:",
 		"eslint": "catalog:server",
 		"globals": "catalog:server",
