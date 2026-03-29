@@ -1,12 +1,12 @@
-import * as jose from "jose";
-import { env } from "./env.js";
+import * as jose from 'jose';
+import { env } from './env.js';
 
 const secret = new TextEncoder().encode(env.JWT_SECRET);
 
 export interface TokenPayload {
 	sub: string;
 	email: string;
-	type: "access" | "refresh";
+	type: 'access' | 'refresh';
 }
 
 /**
@@ -22,13 +22,13 @@ const parseDuration = (duration: string): number => {
 	const unit = match[2];
 
 	switch (unit) {
-		case "s":
+		case 's':
 			return value;
-		case "m":
+		case 'm':
 			return value * 60;
-		case "h":
+		case 'h':
 			return value * 60 * 60;
-		case "d":
+		case 'd':
 			return value * 60 * 60 * 24;
 		default:
 			throw new Error(`Unknown duration unit: ${unit}`);
@@ -38,14 +38,11 @@ const parseDuration = (duration: string): number => {
 /**
  * Sign an access token for the given user.
  */
-export const signAccessToken = async (
-	userId: string,
-	email: string,
-): Promise<string> => {
+export const signAccessToken = async (userId: string, email: string): Promise<string> => {
 	const expiresIn = parseDuration(env.JWT_ACCESS_EXPIRES_IN);
 
-	return new jose.SignJWT({ email, type: "access" })
-		.setProtectedHeader({ alg: "HS256" })
+	return new jose.SignJWT({ email, type: 'access' })
+		.setProtectedHeader({ alg: 'HS256' })
 		.setSubject(userId)
 		.setIssuedAt()
 		.setExpirationTime(`${expiresIn}s`)
@@ -55,14 +52,11 @@ export const signAccessToken = async (
 /**
  * Sign a refresh token for the given user.
  */
-export const signRefreshToken = async (
-	userId: string,
-	email: string,
-): Promise<string> => {
+export const signRefreshToken = async (userId: string, email: string): Promise<string> => {
 	const expiresIn = parseDuration(env.JWT_REFRESH_EXPIRES_IN);
 
-	return new jose.SignJWT({ email, type: "refresh" })
-		.setProtectedHeader({ alg: "HS256" })
+	return new jose.SignJWT({ email, type: 'refresh' })
+		.setProtectedHeader({ alg: 'HS256' })
 		.setSubject(userId)
 		.setIssuedAt()
 		.setExpirationTime(`${expiresIn}s`)
@@ -73,20 +67,18 @@ export const signRefreshToken = async (
  * Verify and decode a JWT token.
  * Returns the payload if valid, null otherwise.
  */
-export const verifyToken = async (
-	token: string,
-): Promise<TokenPayload | null> => {
+export const verifyToken = async (token: string): Promise<TokenPayload | null> => {
 	try {
 		const { payload } = await jose.jwtVerify(token, secret);
 
-		if (!payload.sub || !payload["email"] || !payload["type"]) {
+		if (!payload.sub || !payload['email'] || !payload['type']) {
 			return null;
 		}
 
 		return {
 			sub: payload.sub,
-			email: payload["email"] as string,
-			type: payload["type"] as "access" | "refresh",
+			email: payload['email'] as string,
+			type: payload['type'] as 'access' | 'refresh'
 		};
 	} catch {
 		return null;

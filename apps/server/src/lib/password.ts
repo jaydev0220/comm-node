@@ -1,4 +1,4 @@
-import * as argon2 from "argon2";
+import * as argon2 from 'argon2';
 
 /**
  * Hash a password using Argon2id algorithm.
@@ -9,7 +9,7 @@ export const hashPassword = async (password: string): Promise<string> => {
 		type: argon2.argon2id,
 		memoryCost: 65536, // 64 MiB
 		timeCost: 3,
-		parallelism: 4,
+		parallelism: 4
 	});
 };
 
@@ -17,10 +17,7 @@ export const hashPassword = async (password: string): Promise<string> => {
  * Verify a password against a hash.
  * Returns true if the password matches, false otherwise.
  */
-export const verifyPassword = async (
-	password: string,
-	hash: string,
-): Promise<boolean> => {
+export const verifyPassword = async (password: string, hash: string): Promise<boolean> => {
 	try {
 		return await argon2.verify(hash, password);
 	} catch {
