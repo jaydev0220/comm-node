@@ -1,6 +1,5 @@
-import type { WebSocket } from "ws";
-
-import { verifyToken, type TokenPayload } from "../lib/jwt.js";
+import type { WebSocket } from 'ws';
+import { verifyToken, type TokenPayload } from '../lib/jwt.js';
 
 // ============================================================================
 // Types
@@ -25,6 +24,7 @@ const connections = new Map<string, Set<AuthenticatedSocket>>();
  */
 export const addConnection = (socket: AuthenticatedSocket): void => {
 	const userSockets = connections.get(socket.userId);
+
 	if (userSockets) {
 		userSockets.add(socket);
 	} else {
@@ -37,8 +37,10 @@ export const addConnection = (socket: AuthenticatedSocket): void => {
  */
 export const removeConnection = (socket: AuthenticatedSocket): void => {
 	const userSockets = connections.get(socket.userId);
+
 	if (userSockets) {
 		userSockets.delete(socket);
+
 		if (userSockets.size === 0) {
 			connections.delete(socket.userId);
 		}
@@ -64,6 +66,7 @@ export const getConnectedUserIds = (): string[] => {
  */
 export const getConnectionCount = (): number => {
 	let count = 0;
+
 	for (const sockets of connections.values()) {
 		count += sockets.size;
 	}
@@ -79,21 +82,21 @@ export const getConnectionCount = (): number => {
  * Returns TokenPayload on success, null on failure.
  */
 export const authenticateConnection = async (
-	url: string | undefined,
+	url: string | undefined
 ): Promise<TokenPayload | null> => {
 	if (!url) return null;
 
 	try {
-		const parsedUrl = new URL(url, "ws://localhost");
-		const token = parsedUrl.searchParams.get("token");
+		const parsedUrl = new URL(url, 'ws://localhost');
+		const token = parsedUrl.searchParams.get('token');
 
 		if (!token) return null;
 
 		const payload = await verifyToken(token);
-		if (!payload || payload.type !== "access") {
+
+		if (!payload || payload.type !== 'access') {
 			return null;
 		}
-
 		return payload;
 	} catch {
 		return null;
@@ -105,7 +108,6 @@ export const authenticateConnection = async (
 // ============================================================================
 
 const HEARTBEAT_INTERVAL = 30_000; // 30 seconds
-
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
 /**
@@ -123,6 +125,7 @@ export const startHeartbeat = (): void => {
 					removeConnection(socket);
 					continue;
 				}
+
 				socket.isAlive = false;
 				socket.ping();
 			}

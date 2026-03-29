@@ -1,10 +1,6 @@
-import type { WsServerMessage, WsMessage } from "@packages/schemas";
-
-import { prisma } from "../lib/db.js";
-import {
-	getSocketsForUser,
-	type AuthenticatedSocket,
-} from "./connection.js";
+import type { WsServerMessage, WsMessage } from '@packages/schemas';
+import { prisma } from '../lib/db.js';
+import { getSocketsForUser, type AuthenticatedSocket } from './connection.js';
 
 // ============================================================================
 // Helper: Format Message from Prisma to WS Message
@@ -20,7 +16,7 @@ type PrismaMessage = {
 		avatarUrl: string | null;
 	};
 	content: string | null;
-	type: "TEXT" | "FILE" | "SYSTEM";
+	type: 'TEXT' | 'FILE' | 'SYSTEM';
 	attachments: Array<{
 		id: string;
 		url: string;
@@ -41,7 +37,7 @@ export const formatMessageForWs = (m: PrismaMessage): WsMessage => ({
 		id: m.sender.id,
 		username: m.sender.username,
 		displayName: m.sender.displayName,
-		avatarUrl: m.sender.avatarUrl,
+		avatarUrl: m.sender.avatarUrl
 	},
 	content: m.content,
 	type: m.type,
@@ -50,12 +46,12 @@ export const formatMessageForWs = (m: PrismaMessage): WsMessage => ({
 		url: a.url,
 		mimeType: a.mimeType,
 		size: a.size,
-		name: a.name,
+		name: a.name
 	})),
-	ogEmbed: m.ogEmbed as WsMessage["ogEmbed"],
+	ogEmbed: m.ogEmbed as WsMessage['ogEmbed'],
 	editedAt: m.editedAt?.toISOString() ?? null,
 	deletedAt: m.deletedAt?.toISOString() ?? null,
-	createdAt: m.createdAt.toISOString(),
+	createdAt: m.createdAt.toISOString()
 });
 
 // ============================================================================
@@ -65,10 +61,7 @@ export const formatMessageForWs = (m: PrismaMessage): WsMessage => ({
 /**
  * Send a message to a single WebSocket connection.
  */
-export const sendToSocket = (
-	socket: AuthenticatedSocket,
-	message: WsServerMessage,
-): void => {
+export const sendToSocket = (socket: AuthenticatedSocket, message: WsServerMessage): void => {
 	if (socket.readyState === socket.OPEN) {
 		socket.send(JSON.stringify(message));
 	}
@@ -79,8 +72,8 @@ export const sendToSocket = (
  */
 export const sendAck = (socket: AuthenticatedSocket, requestId: string): void => {
 	sendToSocket(socket, {
-		event: "ack",
-		payload: { requestId },
+		event: 'ack',
+		payload: { requestId }
 	});
 };
 
@@ -89,20 +82,22 @@ export const sendAck = (socket: AuthenticatedSocket, requestId: string): void =>
  */
 export const sendError = (
 	socket: AuthenticatedSocket,
-	code: "UNAUTHORIZED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_FAILED" | "INTERNAL_ERROR",
+	code: 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'VALIDATION_FAILED' | 'INTERNAL_ERROR',
 	message: string,
-	requestId?: string,
+	requestId?: string
 ): void => {
 	const payload: { code: typeof code; message: string; requestId?: string } = {
 		code,
-		message,
+		message
 	};
+
 	if (requestId) {
 		payload.requestId = requestId;
 	}
+
 	sendToSocket(socket, {
-		event: "error",
-		payload,
+		event: 'error',
+		payload
 	});
 };
 
@@ -113,12 +108,10 @@ export const sendError = (
 /**
  * Get participant user IDs for a conversation (fresh from DB).
  */
-export const getConversationParticipantIds = async (
-	conversationId: string,
-): Promise<string[]> => {
+export const getConversationParticipantIds = async (conversationId: string): Promise<string[]> => {
 	const participants = await prisma.conversationParticipant.findMany({
 		where: { conversationId },
-		select: { userId: true },
+		select: { userId: true }
 	});
 	return participants.map((p: { userId: string }) => p.userId);
 };
@@ -130,12 +123,13 @@ export const getConversationParticipantIds = async (
 export const broadcastToConversation = async (
 	conversationId: string,
 	message: WsServerMessage,
-	excludeSocket?: AuthenticatedSocket,
+	excludeSocket?: AuthenticatedSocket
 ): Promise<void> => {
 	const participantIds = await getConversationParticipantIds(conversationId);
 
 	for (const userId of participantIds) {
 		const sockets = getSocketsForUser(userId);
+
 		for (const socket of sockets) {
 			if (socket !== excludeSocket) {
 				sendToSocket(socket, message);
@@ -151,17 +145,16 @@ export const broadcastToConversation = async (
 export const broadcastNewMessage = async (
 	message: WsMessage,
 	senderSocket: AuthenticatedSocket,
-	requestId: string,
+	requestId: string
 ): Promise<void> => {
 	const conversationId = message.conversationId;
 
 	// Broadcast to all participants (including sender's other devices)
 	await broadcastToConversation(
 		conversationId,
-		{ event: "message:new", payload: message },
-		undefined, // Don't exclude anyone - all devices should see it
+		{ event: 'message:new', payload: message },
+		undefined // Don't exclude anyone - all devices should see it
 	);
-
 	// Send ack to the originating socket
 	sendAck(senderSocket, requestId);
 };
@@ -175,21 +168,20 @@ export const broadcastMessageEdited = async (
 	content: string,
 	editedAt: Date,
 	senderSocket: AuthenticatedSocket,
-	requestId: string,
+	requestId: string
 ): Promise<void> => {
 	await broadcastToConversation(
 		conversationId,
 		{
-			event: "message:edited",
+			event: 'message:edited',
 			payload: {
 				messageId,
 				content,
-				editedAt: editedAt.toISOString(),
-			},
+				editedAt: editedAt.toISOString()
+			}
 		},
-		undefined,
+		undefined
 	);
-
 	sendAck(senderSocket, requestId);
 };
 
@@ -200,16 +192,15 @@ export const broadcastMessageDeleted = async (
 	conversationId: string,
 	messageId: string,
 	senderSocket: AuthenticatedSocket,
-	requestId: string,
+	requestId: string
 ): Promise<void> => {
 	await broadcastToConversation(
 		conversationId,
 		{
-			event: "message:deleted",
-			payload: { messageId },
+			event: 'message:deleted',
+			payload: { messageId }
 		},
-		undefined,
+		undefined
 	);
-
 	sendAck(senderSocket, requestId);
 };
