@@ -18,19 +18,27 @@
 		"db:seed": "prisma db seed"
 	},
 	"dependencies": {
+		"@packages/schemas": "workspace:*",
 		"@prisma/adapter-pg": "catalog:server",
 		"@prisma/client": "catalog:server",
+		"argon2": "catalog:server",
+		"cookie-parser": "catalog:server",
 		"cors": "catalog:server",
 		"express": "catalog:server",
+		"express-rate-limit": "catalog:server",
 		"helmet": "catalog:server",
+		"jose": "catalog:server",
+		"multer": "catalog:server",
 		"pg": "catalog:server",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:server",
 		"@packages/prettier-config": "workspace:*",
+		"@types/cookie-parser": "catalog:server",
 		"@types/cors": "catalog:server",
 		"@types/express": "catalog:server",
+		"@types/multer": "catalog:server",
 		"@types/node": "catalog:",
 		"@types/pg": "catalog:server",
 		"dotenv": "catalog:",
