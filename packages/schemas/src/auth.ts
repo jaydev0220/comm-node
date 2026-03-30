@@ -31,9 +31,21 @@ export const friendRequestActionSchema = z.object({
   action: z.enum(["accept", "reject"]),
 });
 
+export const googleCompleteRequestSchema = z.object({
+  token: z.string().min(1),
+  username: z
+    .string()
+    .min(3)
+    .max(32)
+    .regex(/^[a-z0-9_]+$/),
+  displayName: z.string().min(1).max(64),
+  avatarUrl: z.string().url().optional(),
+});
+
 // Types
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type AuthResponse = z.infer<typeof authResponseSchema>;
 export type RefreshResponse = z.infer<typeof refreshResponseSchema>;
 export type FriendRequestAction = z.infer<typeof friendRequestActionSchema>;
+export type GoogleCompleteRequest = z.infer<typeof googleCompleteRequestSchema>;
