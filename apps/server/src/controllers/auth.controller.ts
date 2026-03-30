@@ -1,6 +1,8 @@
 import type { RequestHandler } from 'express';
 import * as authService from '../services/auth.service.js';
 import { errors } from '../middleware/error-handler.js';
+import { buildAuthorizationUrl } from '../lib/google-oauth.js';
+import { env } from '../lib/env.js';
 
 const REFRESH_TOKEN_COOKIE = 'refreshToken';
 const COOKIE_OPTIONS = {
@@ -48,15 +50,42 @@ export const refresh: RequestHandler = async (req, res) => {
 	res.json({ accessToken });
 };
 
-// Google OAuth stubs
+// Google OAuth
 export const googleAuth: RequestHandler = (_req, res) => {
-	res.status(501).json({
-		error: { code: 'NOT_IMPLEMENTED', message: 'Google OAuth not configured' }
-	});
+	const authUrl = buildAuthorizationUrl();
+
+	res.redirect(authUrl);
 };
 
-export const googleCallback: RequestHandler = (_req, res) => {
-	res.status(501).json({
-		error: { code: 'NOT_IMPLEMENTED', message: 'Google OAuth not configured' }
-	});
+export const googleCallback: RequestHandler = async (req, res) => {
+	const code = req.query['code'] as string | undefined;
+
+	if (!code) {
+		throw errors.badRequest('Missing authorization code');
+	}
+
+	const result = await authService.handleGoogleCallback(code);
+
+	if (result.type === 'login') {
+		// Returning user with complete profile → set cookie and redirect to success
+		res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, COOKIE_OPTIONS);
+
+		const successUrl = new URL(env.GOOGLE_SUCCESS_REDIRECT_URL);
+
+		successUrl.searchParams.set('accessToken', result.accessToken);
+		res.redirect(successUrl.toString());
+	} else {
+		// New/incomplete user → redirect to setup page with token
+		const setupUrl = new URL(env.GOOGLE_SETUP_REDIRECT_URL);
+
+		setupUrl.searchParams.set('token', result.setupToken);
+		res.redirect(setupUrl.toString());
+	}
+};
+
+export const googleComplete: RequestHandler = async (req, res) => {
+	const { user, accessToken, refreshToken } = await authService.completeGoogleSetup(req.body);
+
+	res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, COOKIE_OPTIONS);
+	res.status(201).json({ accessToken, user });
 };

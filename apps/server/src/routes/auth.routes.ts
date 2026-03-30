@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { loginRequestSchema, registerRequestSchema } from '@packages/schemas';
+import { googleCompleteRequestSchema, loginRequestSchema, registerRequestSchema } from '@packages/schemas';
 import * as authController from '../controllers/auth.controller.js';
 import { authenticate } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate.js';
@@ -12,5 +12,6 @@ router.post('/logout', authenticate, authController.logout);
 router.post('/refresh', authController.refresh);
 router.get('/google', authController.googleAuth);
 router.get('/google/callback', authController.googleCallback);
+router.post('/google/complete', validateBody(googleCompleteRequestSchema), authController.googleComplete);
 
 export default router;
