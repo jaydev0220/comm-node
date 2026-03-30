@@ -1,0 +1,101 @@
+services:
+  postgres:
+    image: postgres:18.3-alpine
+    container_name: comm-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: comm_dev
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d comm_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - comm-network-dev
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: comm-pgadmin-dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@localhost.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - comm-network-dev
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+      target: deps
+    container_name: comm-server-dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/comm_dev?schema=public
+      JWT_SECRET: dev-secret-key-min-32-characters-long
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      CORS_ORIGIN: http://localhost:3001
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3000/auth/google/callback}
+    volumes:
+      - ./apps/server/src:/app/apps/server/src:ro
+      - ./apps/server/prisma:/app/apps/server/prisma:ro
+      - ./packages/schemas/src:/app/packages/schemas/src:ro
+    ports:
+      - "3000:3000"
+    working_dir: /app/apps/server
+    command: ["pnpm", "dev"]
+    networks:
+      - comm-network-dev
+
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+      target: deps
+    container_name: comm-client-dev
+    restart: unless-stopped
+    depends_on:
+      - server
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    volumes:
+      - ./apps/client/src:/app/apps/client/src:ro
+      - ./apps/client/public:/app/apps/client/public:ro
+    ports:
+      - "3001:3000"
+    working_dir: /app/apps/client
+    command: ["pnpm", "dev"]
+    networks:
+      - comm-network-dev
+
+volumes:
+  postgres_dev_data:
+  pgadmin_data:
+
+networks:
+  comm-network-dev:
+    driver: bridge
