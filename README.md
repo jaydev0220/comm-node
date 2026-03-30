@@ -77,3 +77,31 @@ GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
 2. After Google consent → callback to `/auth/google/callback`
 3. **Returning users** (complete profile): Redirected to frontend with access token
 4. **New users**: Redirected to `/register/google?token=xyz` to complete profile (username, display name)
+
+## Client Pages
+
+The frontend includes authentication pages with Traditional Chinese interface:
+
+### Authentication Routes
+
+| Route | Description |
+|-------|-------------|
+| `/login` | Login page with Google OAuth and email/password |
+| `/register` | Registration page with Google OAuth and email form |
+| `/register/google` | Profile setup after Google OAuth (username, display name) |
+| `/auth/success` | OAuth callback handler, stores token and redirects |
+
+### Client Environment
+
+Copy the example environment file:
+
+```bash
+cp apps/client/.env.example apps/client/.env.local
+```
+
+Configuration:
+
+```env
+# Backend API URL
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
