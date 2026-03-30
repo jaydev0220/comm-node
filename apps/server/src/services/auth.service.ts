@@ -157,7 +157,6 @@ const issueTokensForUser = async (
 			expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 		}
 	});
-
 	return { user: formatUser(user), accessToken, refreshToken };
 };
 
@@ -194,13 +193,11 @@ export const handleGoogleCallback = async (code: string): Promise<GoogleCallback
 		if (hasCompleteProfile(existingOAuth.user)) {
 			// Complete profile → login
 			const tokens = await issueTokensForUser(existingOAuth.user);
-
 			return { type: 'login', ...tokens };
 		}
 
 		// Incomplete profile → setup flow
 		const setupToken = await signSetupToken(existingOAuth.user.email, googleUser.googleId);
-
 		return { type: 'setup', setupToken, email: existingOAuth.user.email };
 	}
 
@@ -222,13 +219,11 @@ export const handleGoogleCallback = async (code: string): Promise<GoogleCallback
 		if (hasCompleteProfile(existingUser)) {
 			// Existing user with complete profile → login
 			const tokens = await issueTokensForUser(existingUser);
-
 			return { type: 'login', ...tokens };
 		}
 
 		// Incomplete profile → setup flow (unlikely for password users, but handle it)
 		const setupToken = await signSetupToken(existingUser.email, googleUser.googleId);
-
 		return { type: 'setup', setupToken, email: existingUser.email };
 	}
 
@@ -240,7 +235,7 @@ export const handleGoogleCallback = async (code: string): Promise<GoogleCallback
 			email: googleUser.email,
 			username: placeholderUsername,
 			displayName: googleUser.name ?? googleUser.email.split('@')[0] ?? 'User',
-			avatarUrl: googleUser.picture,
+			avatarUrl: googleUser.picture ?? null,
 			oauthAccounts: {
 				create: {
 					provider: 'GOOGLE',
@@ -249,9 +244,7 @@ export const handleGoogleCallback = async (code: string): Promise<GoogleCallback
 			}
 		}
 	});
-
 	const setupToken = await signSetupToken(newUser.email, googleUser.googleId);
-
 	return { type: 'setup', setupToken, email: newUser.email };
 };
 
@@ -282,7 +275,6 @@ export const completeGoogleSetup = async (
 	if (!oauthAccount) {
 		throw errors.notFound('OAuth account not found');
 	}
-
 	// Verify email matches
 	if (oauthAccount.user.email !== payload.email) {
 		throw errors.forbidden('Email mismatch');
@@ -309,6 +301,5 @@ export const completeGoogleSetup = async (
 			avatarUrl: data.avatarUrl ?? oauthAccount.user.avatarUrl
 		}
 	});
-
 	return issueTokensForUser(updatedUser);
 };
