@@ -12,10 +12,7 @@ export class ApiClient {
 		this.baseUrl = baseUrl;
 	}
 
-	private async request<T>(
-		endpoint: string,
-		options: RequestInit = {}
-	): Promise<T> {
+	private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
 		const url = `${this.baseUrl}${endpoint}`;
 
 		const response = await fetch(url, {

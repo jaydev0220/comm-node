@@ -105,9 +105,7 @@ function GoogleSetupContent() {
 			<div className="flex items-center justify-center gap-2 mb-2">
 				<SiGoogle size={24} className="text-text-secondary" />
 			</div>
-			<h1 className="text-2xl font-bold text-text-primary text-center mb-2">
-				完成帳號設定
-			</h1>
+			<h1 className="text-2xl font-bold text-text-primary text-center mb-2">完成帳號設定</h1>
 			<p className="text-sm text-text-secondary text-center mb-8">
 				您已成功通過 Google 驗證，請完成以下資料設定
 			</p>
@@ -172,12 +170,7 @@ function GoogleSetupContent() {
 					/>
 				</FormField>
 
-				<Button
-					type="submit"
-					size="lg"
-					className="w-full mt-6"
-					loading={loading}
-				>
+				<Button type="submit" size="lg" className="w-full mt-6" loading={loading}>
 					完成註冊
 				</Button>
 			</form>

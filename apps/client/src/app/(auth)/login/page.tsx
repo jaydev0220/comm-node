@@ -68,9 +68,7 @@ export default function LoginPage() {
 
 	return (
 		<>
-			<h1 className="text-2xl font-bold text-text-primary text-center mb-8">
-				登入 CommNode
-			</h1>
+			<h1 className="text-2xl font-bold text-text-primary text-center mb-8">登入 CommNode</h1>
 
 			<Button
 				type="button"
@@ -116,12 +114,7 @@ export default function LoginPage() {
 					/>
 				</FormField>
 
-				<Button
-					type="submit"
-					size="lg"
-					className="w-full mt-6"
-					loading={loading}
-				>
+				<Button type="submit" size="lg" className="w-full mt-6" loading={loading}>
 					登入
 				</Button>
 			</form>

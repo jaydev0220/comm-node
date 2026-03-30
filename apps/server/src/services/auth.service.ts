@@ -144,9 +144,15 @@ const hasCompleteProfile = (user: { username: string }): boolean => {
 /**
  * Issue tokens for an existing user (login flow).
  */
-const issueTokensForUser = async (
-	user: { id: string; email: string; username: string; displayName: string; avatarUrl: string | null; createdAt: Date; updatedAt: Date }
-): Promise<{ user: User; accessToken: string; refreshToken: string }> => {
+const issueTokensForUser = async (user: {
+	id: string;
+	email: string;
+	username: string;
+	displayName: string;
+	avatarUrl: string | null;
+	createdAt: Date;
+	updatedAt: Date;
+}): Promise<{ user: User; accessToken: string; refreshToken: string }> => {
 	const accessToken = await signAccessToken(user.id, user.email);
 	const refreshToken = randomBytes(32).toString('hex');
 

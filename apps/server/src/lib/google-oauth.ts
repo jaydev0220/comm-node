@@ -41,7 +41,8 @@ export const buildAuthorizationUrl = (): string => {
 		scope: 'openid email profile',
 		access_type: 'online',
 		prompt: 'select_account'
-	});	return `${GOOGLE_AUTH_URL}?${params.toString()}`;
+	});
+	return `${GOOGLE_AUTH_URL}?${params.toString()}`;
 };
 
 /**
@@ -64,7 +65,8 @@ const exchangeCodeForTokens = async (code: string): Promise<GoogleTokenResponse>
 		const error = await response.text();
 
 		throw new Error(`Failed to exchange code for tokens: ${error}`);
-	}	return response.json() as Promise<GoogleTokenResponse>;
+	}
+	return response.json() as Promise<GoogleTokenResponse>;
 };
 
 /**
@@ -79,7 +81,8 @@ const fetchUserInfo = async (accessToken: string): Promise<GoogleUserInfoRespons
 		const error = await response.text();
 
 		throw new Error(`Failed to fetch user info: ${error}`);
-	}	return response.json() as Promise<GoogleUserInfoResponse>;
+	}
+	return response.json() as Promise<GoogleUserInfoResponse>;
 };
 
 /**
@@ -92,7 +95,8 @@ export const getGoogleUserInfo = async (code: string): Promise<GoogleUserInfo> =
 
 	if (!userInfo.email) {
 		throw new Error('Google account does not have an email address');
-	}	return {
+	}
+	return {
 		googleId: userInfo.id,
 		email: userInfo.email,
 		name: userInfo.name ?? undefined,

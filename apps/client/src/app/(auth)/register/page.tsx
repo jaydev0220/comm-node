@@ -112,9 +112,7 @@ export default function RegisterPage() {
 
 	return (
 		<>
-			<h1 className="text-2xl font-bold text-text-primary text-center mb-8">
-				註冊 CommNode
-			</h1>
+			<h1 className="text-2xl font-bold text-text-primary text-center mb-8">註冊 CommNode</h1>
 
 			<Button
 				type="button"
@@ -219,12 +217,7 @@ export default function RegisterPage() {
 					/>
 				</FormField>
 
-				<Button
-					type="submit"
-					size="lg"
-					className="w-full mt-6"
-					loading={loading}
-				>
+				<Button type="submit" size="lg" className="w-full mt-6" loading={loading}>
 					註冊
 				</Button>
 			</form>

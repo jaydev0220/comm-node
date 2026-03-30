@@ -36,7 +36,8 @@ export const verifySetupToken = async (token: string): Promise<SetupTokenPayload
 			typeof payload['googleId'] !== 'string'
 		) {
 			return null;
-		}		return {
+		}
+		return {
 			email: payload['email'],
 			googleId: payload['googleId'],
 			type: 'oauth-setup'
