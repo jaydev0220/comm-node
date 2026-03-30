@@ -18,10 +18,10 @@ const mockSearchService = {
 	searchMessages: mock.fn()
 };
 
-mock.module('../src/services/search.service.js', { namedExports: mockSearchService });
+mock.module('../../src/services/search.service.js', { namedExports: mockSearchService });
 
 // Import controller after mocking
-const { search } = await import('../src/controllers/search.controller.js');
+const { search } = await import('../../src/controllers/search.controller.js');
 
 describe('Search Controller', () => {
 	let res: MockResponse;

@@ -11,7 +11,7 @@ import { createMockRequest, createMockResponse, type MockResponse } from '../set
 // The multer middleware is configured separately and should be tested in integration tests
 
 // Import controller
-const { uploadFile } = await import('../src/controllers/uploads.controller.js');
+const { uploadFile } = await import('../../src/controllers/uploads.controller.js');
 // Helper to create mock multer file
 const createMockMulterFile = (overrides = {}): Express.Multer.File => ({
 	fieldname: 'file',

@@ -23,7 +23,7 @@ const mockFriendsService = {
 	unblockUser: mock.fn()
 };
 
-mock.module('../src/services/friends.service.js', { namedExports: mockFriendsService });
+mock.module('../../src/services/friends.service.js', { namedExports: mockFriendsService });
 
 // Import controller after mocking
 const {
@@ -34,7 +34,7 @@ const {
 	removeFriend,
 	blockUser,
 	unblockUser
-} = await import('../src/controllers/friends.controller.js');
+} = await import('../../src/controllers/friends.controller.js');
 // Helper to create mock friend data
 const createMockFriend = (overrides = {}) => ({
 	id: 'friend-123',

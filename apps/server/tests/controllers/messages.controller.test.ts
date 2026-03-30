@@ -22,12 +22,12 @@ const mockPrisma = {
 	}
 };
 
-mock.module('../src/lib/db.js', {
+mock.module('../../src/lib/db.js', {
 	namedExports: { prisma: mockPrisma }
 });
 
 // Import controller after mocking
-const { listMessages } = await import('../src/controllers/messages.controller.js');
+const { listMessages } = await import('../../src/controllers/messages.controller.js');
 // Helper to create mock message data
 const createMockDbMessage = (overrides = {}) => ({
 	id: 'msg-123',

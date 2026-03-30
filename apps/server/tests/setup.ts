@@ -95,11 +95,13 @@ export const createMockRequest = (options: MockRequestOptions = {}): Partial<Req
 export interface MockResponse {
 	status: ReturnType<typeof createStatusMock>;
 	json: ReturnType<typeof createJsonMock>;
+	send: ReturnType<typeof createSendMock>;
 	cookie: ReturnType<typeof createCookieMock>;
 	clearCookie: ReturnType<typeof createClearCookieMock>;
 	redirect: ReturnType<typeof createRedirectMock>;
 	_status: number | null;
 	_json: unknown;
+	_sent: boolean;
 	_cookies: Map<string, { value: string; options?: unknown }>;
 	_clearedCookies: Set<string>;
 	_redirectUrl: string | null;
@@ -135,6 +137,28 @@ const createJsonMock = (res: MockResponse) => {
 	return Object.assign(
 		(data: unknown) => {
 			fn.mock.calls.push([data]);
+			return original(data);
+		},
+		{ mock: fn.mock }
+	);
+};
+
+const createSendMock = (res: MockResponse) => {
+	const fn = (data?: unknown) => {
+		res._sent = true;
+
+		if (data !== undefined) {
+			res._json = data;
+		}
+		return res;
+	};
+
+	fn.mock = { calls: [] as unknown[][] };
+
+	const original = fn;
+	return Object.assign(
+		(data?: unknown) => {
+			fn.mock.calls.push(data !== undefined ? [data] : []);
 			return original(data);
 		},
 		{ mock: fn.mock }
@@ -199,6 +223,7 @@ export const createMockResponse = (): MockResponse => {
 	const res: MockResponse = {
 		_status: null,
 		_json: null,
+		_sent: false,
 		_cookies: new Map(),
 		_clearedCookies: new Set(),
 		_redirectUrl: null
@@ -206,6 +231,7 @@ export const createMockResponse = (): MockResponse => {
 
 	res.status = createStatusMock(res);
 	res.json = createJsonMock(res);
+	res.send = createSendMock(res);
 	res.cookie = createCookieMock(res);
 	res.clearCookie = createClearCookieMock(res);
 	res.redirect = createRedirectMock(res);

@@ -21,11 +21,11 @@ const mockChatsService = {
 	deleteChat: mock.fn()
 };
 
-mock.module('../src/services/chats.service.js', { namedExports: mockChatsService });
+mock.module('../../src/services/chats.service.js', { namedExports: mockChatsService });
 
 // Import controller after mocking
 const { listChats, createChat, getChat, updateChat, deleteChat } =
-	await import('../src/controllers/chats.controller.js');
+	await import('../../src/controllers/chats.controller.js');
 // Helper to create mock chat data
 const createMockChat = (overrides = {}) => ({
 	id: 'chat-123',

@@ -29,12 +29,12 @@ const mockChatsService = {
 	getParticipantRole: mock.fn()
 };
 
-mock.module('../src/lib/db.js', { namedExports: { prisma: mockPrisma } });
-mock.module('../src/services/chats.service.js', { namedExports: mockChatsService });
+mock.module('../../src/lib/db.js', { namedExports: { prisma: mockPrisma } });
+mock.module('../../src/services/chats.service.js', { namedExports: mockChatsService });
 
 // Import controller after mocking
 const { listParticipants, addParticipant, updateRole, removeParticipant } =
-	await import('../src/controllers/participants.controller.js');
+	await import('../../src/controllers/participants.controller.js');
 // Helper to create mock participant data
 const createMockDbParticipant = (overrides = {}) => ({
 	user: {

@@ -21,11 +21,11 @@ const mockUsersService = {
 	searchUsers: mock.fn()
 };
 
-mock.module('../src/services/users.service.js', { namedExports: mockUsersService });
+mock.module('../../src/services/users.service.js', { namedExports: mockUsersService });
 
 // Import controller after mocking
 const { getMe, updateMe, deleteMe, searchUsers } =
-	await import('../src/controllers/users.controller.js');
+	await import('../../src/controllers/users.controller.js');
 
 describe('Users Controller', () => {
 	let res: MockResponse;

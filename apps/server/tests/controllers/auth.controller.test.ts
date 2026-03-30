@@ -32,13 +32,13 @@ const mockEnv = {
 };
 
 // Mock modules
-mock.module('../src/services/auth.service.js', { namedExports: mockAuthService });
-mock.module('../src/lib/google-oauth.js', { namedExports: mockGoogleOAuth });
-mock.module('../src/lib/env.js', { namedExports: mockEnv });
+mock.module('../../src/services/auth.service.js', { namedExports: mockAuthService });
+mock.module('../../src/lib/google-oauth.js', { namedExports: mockGoogleOAuth });
+mock.module('../../src/lib/env.js', { namedExports: mockEnv });
 
 // Import controller after mocking
 const { register, login, logout, refresh, googleAuth, googleCallback, googleComplete } =
-	await import('../src/controllers/auth.controller.js');
+	await import('../../src/controllers/auth.controller.js');
 
 describe('Auth Controller', () => {
 	let res: MockResponse;
