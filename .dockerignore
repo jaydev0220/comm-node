@@ -1,0 +1,51 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+.next
+build
+dist
+out
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Version control
+.git
+.gitignore
+
+# IDE and editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test and coverage
+coverage
+.nyc_output
+
+# Docker
+Dockerfile*
+docker-compose*
+.docker
+
+# Documentation (not needed in image)
+docs
+*.md
+!README.md
+
+# Misc
+.prettierignore
+.eslintcache

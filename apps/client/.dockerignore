@@ -1,0 +1,21 @@
+# Dependencies (handled at root level)
+node_modules
+
+# Build outputs
+.next
+out
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Development files
+*.log
+.eslintcache
