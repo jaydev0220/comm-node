@@ -1,1 +1,100 @@
 @import 'tailwindcss';
+
+/* ─── Dark mode via .dark class (next-themes) ─────────────────── */
+@variant dark (&:is(.dark *));
+
+/* ─── Semantic token values ───────────────────────────────────── */
+@layer base {
+	:root {
+		/* Surfaces */
+		--cn-background: #faf8f2;
+		--cn-surface: #ffffff;
+		--cn-surface-raised: #f5f3ec;
+
+		/* Text */
+		--cn-text-primary: #1a1612;
+		--cn-text-secondary: #6b6560;
+		--cn-text-muted: #9e9891;
+
+		/* Borders */
+		--cn-border: #e5e1d5;
+		--cn-border-subtle: #ede9de;
+
+		/* Action — Deep Rose */
+		--cn-action: #be185d;
+		--cn-action-hover: #9d1450;
+		--cn-action-subtle: #fce7f3;
+		--cn-action-fg: #ffffff;
+
+		/* Status */
+		--cn-success: #166534;
+		--cn-success-subtle: #dcfce7;
+		--cn-destructive: #dc2626;
+		--cn-destructive-subtle: #fee2e2;
+	}
+
+	.dark {
+		/* Surfaces */
+		--cn-background: #141210;
+		--cn-surface: #1e1b17;
+		--cn-surface-raised: #252118;
+
+		/* Text — cream as primary in dark mode */
+		--cn-text-primary: #f8f4e3;
+		--cn-text-secondary: #b5afa4;
+		--cn-text-muted: #7a7369;
+
+		/* Borders */
+		--cn-border: #33302a;
+		--cn-border-subtle: #2a2722;
+
+		/* Action — lighter rose for dark */
+		--cn-action: #ec4899;
+		--cn-action-hover: #f472b6;
+		--cn-action-subtle: #2d0a1e;
+		--cn-action-fg: #f8f4e3;
+
+		/* Status */
+		--cn-success: #34d399;
+		--cn-success-subtle: #052e16;
+		--cn-destructive: #f87171;
+		--cn-destructive-subtle: #3b0a0a;
+	}
+}
+
+/* ─── Tailwind token registration ─────────────────────────────── */
+/*
+ * @theme inline maps Tailwind utility classes to live CSS vars.
+ * This means bg-background, text-primary, border-border etc.
+ * all respond to .dark at runtime — no build-time baking.
+ */
+@theme inline {
+	/* Brand constant — same in both modes */
+	--color-cream: #f8f4e3;
+
+	/* Surfaces */
+	--color-background: var(--cn-background);
+	--color-surface: var(--cn-surface);
+	--color-surface-raised: var(--cn-surface-raised);
+
+	/* Text */
+	--color-text-primary: var(--cn-text-primary);
+	--color-text-secondary: var(--cn-text-secondary);
+	--color-text-muted: var(--cn-text-muted);
+
+	/* Borders */
+	--color-border: var(--cn-border);
+	--color-border-subtle: var(--cn-border-subtle);
+
+	/* Action */
+	--color-action: var(--cn-action);
+	--color-action-hover: var(--cn-action-hover);
+	--color-action-subtle: var(--cn-action-subtle);
+	--color-action-fg: var(--cn-action-fg);
+
+	/* Status */
+	--color-success: var(--cn-success);
+	--color-success-subtle: var(--cn-success-subtle);
+	--color-destructive: var(--cn-destructive);
+	--color-destructive-subtle: var(--cn-destructive-subtle);
+}
