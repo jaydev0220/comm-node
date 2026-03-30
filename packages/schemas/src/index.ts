@@ -18,11 +18,13 @@ export {
 	authResponseSchema,
 	refreshResponseSchema,
 	friendRequestActionSchema,
+	googleCompleteRequestSchema,
 	type RegisterRequest,
 	type LoginRequest,
 	type AuthResponse,
 	type RefreshResponse,
 	type FriendRequestAction,
+	type GoogleCompleteRequest,
 } from "./auth.js";
 
 // User schemas
