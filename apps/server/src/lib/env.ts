@@ -13,10 +13,20 @@ const envSchema = z.object({
 	// CORS
 	CORS_ORIGIN: z.string().url().default('http://localhost:3001'),
 
-	// Google OAuth (optional - stubs for now)
-	GOOGLE_CLIENT_ID: z.string().optional(),
-	GOOGLE_CLIENT_SECRET: z.string().optional(),
-	GOOGLE_CALLBACK_URL: z.string().url().optional()
+	// Google OAuth
+	GOOGLE_CLIENT_ID: z.string().min(1),
+	GOOGLE_CLIENT_SECRET: z.string().min(1),
+	GOOGLE_CALLBACK_URL: z.string().url(),
+	GOOGLE_SUCCESS_REDIRECT_URL: z
+		.string()
+		.url()
+		.optional()
+		.transform((val) => val ?? undefined),
+	GOOGLE_SETUP_REDIRECT_URL: z
+		.string()
+		.url()
+		.optional()
+		.transform((val) => val ?? undefined)
 });
 const parsed = envSchema.safeParse(process.env);
 
@@ -26,6 +36,13 @@ if (!parsed.success) {
 	process.exit(1);
 }
 
-export const env = parsed.data;
+export const env = {
+	...parsed.data,
+	// Derive redirect URLs from CORS_ORIGIN if not explicitly set
+	GOOGLE_SUCCESS_REDIRECT_URL:
+		parsed.data.GOOGLE_SUCCESS_REDIRECT_URL ?? `${parsed.data.CORS_ORIGIN}/auth/success`,
+	GOOGLE_SETUP_REDIRECT_URL:
+		parsed.data.GOOGLE_SETUP_REDIRECT_URL ?? `${parsed.data.CORS_ORIGIN}/register/google`
+};
 
 export type Env = z.infer<typeof envSchema>;
