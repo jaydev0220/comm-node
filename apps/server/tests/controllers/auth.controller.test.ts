@@ -8,7 +8,6 @@ import assert from 'node:assert';
 import {
 	createMockRequest,
 	createMockResponse,
-	createMockUser,
 	createMockApiUser,
 	type MockResponse
 } from '../setup.js';
@@ -22,11 +21,9 @@ const mockAuthService = {
 	handleGoogleCallback: mock.fn(),
 	completeGoogleSetup: mock.fn()
 };
-
 const mockGoogleOAuth = {
 	buildAuthorizationUrl: mock.fn(() => 'https://accounts.google.com/oauth')
 };
-
 const mockEnv = {
 	env: {
 		GOOGLE_SUCCESS_REDIRECT_URL: 'http://localhost:3001/auth/success',
@@ -56,7 +53,6 @@ describe('Auth Controller', () => {
 		mockAuthService.completeGoogleSetup.mock.resetCalls();
 		mockGoogleOAuth.buildAuthorizationUrl.mock.resetCalls();
 	});
-
 	describe('register', () => {
 		it('should register a new user and set refresh token cookie', async () => {
 			const mockUser = createMockApiUser();
@@ -65,6 +61,7 @@ describe('Auth Controller', () => {
 				accessToken: 'access-token-123',
 				refreshToken: 'refresh-token-456'
 			};
+
 			mockAuthService.registerUser.mock.mockImplementationOnce(() => Promise.resolve(mockResult));
 
 			const req = createMockRequest({
@@ -77,7 +74,6 @@ describe('Auth Controller', () => {
 			});
 
 			await register(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 201);
 			assert.deepStrictEqual(res._json, {
 				accessToken: 'access-token-123',
@@ -85,7 +81,6 @@ describe('Auth Controller', () => {
 			});
 			assert.strictEqual(res._cookies.get('refreshToken')?.value, 'refresh-token-456');
 		});
-
 		it('should pass request body to auth service', async () => {
 			const body = {
 				email: 'new@example.com',
@@ -93,6 +88,7 @@ describe('Auth Controller', () => {
 				username: 'newuser',
 				displayName: 'New User'
 			};
+
 			mockAuthService.registerUser.mock.mockImplementationOnce(() =>
 				Promise.resolve({
 					user: createMockApiUser(),
@@ -102,13 +98,12 @@ describe('Auth Controller', () => {
 			);
 
 			const req = createMockRequest({ body });
-			await register(req as never, res as never, () => {});
 
+			await register(req as never, res as never, () => {});
 			assert.strictEqual(mockAuthService.registerUser.mock.calls.length, 1);
 			assert.deepStrictEqual(mockAuthService.registerUser.mock.calls[0]?.arguments[0], body);
 		});
 	});
-
 	describe('login', () => {
 		it('should login user and set refresh token cookie', async () => {
 			const mockUser = createMockApiUser();
@@ -117,6 +112,7 @@ describe('Auth Controller', () => {
 				accessToken: 'access-token-789',
 				refreshToken: 'refresh-token-012'
 			};
+
 			mockAuthService.loginUser.mock.mockImplementationOnce(() => Promise.resolve(mockResult));
 
 			const req = createMockRequest({
@@ -124,7 +120,6 @@ describe('Auth Controller', () => {
 			});
 
 			await login(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, null); // json() doesn't set status (defaults to 200)
 			assert.deepStrictEqual(res._json, {
 				accessToken: 'access-token-789',
@@ -132,7 +127,6 @@ describe('Auth Controller', () => {
 			});
 			assert.strictEqual(res._cookies.get('refreshToken')?.value, 'refresh-token-012');
 		});
-
 		it('should set httpOnly cookie option', async () => {
 			mockAuthService.loginUser.mock.mockImplementationOnce(() =>
 				Promise.resolve({
@@ -145,13 +139,14 @@ describe('Auth Controller', () => {
 			const req = createMockRequest({
 				body: { email: 'test@example.com', password: 'password123' }
 			});
+
 			await login(req as never, res as never, () => {});
 
 			const cookieOptions = res._cookies.get('refreshToken')?.options as Record<string, unknown>;
+
 			assert.strictEqual(cookieOptions?.httpOnly, true);
 		});
 	});
-
 	describe('logout', () => {
 		it('should logout user and clear refresh token cookie', async () => {
 			mockAuthService.logoutUser.mock.mockImplementationOnce(() => Promise.resolve());
@@ -161,7 +156,6 @@ describe('Auth Controller', () => {
 			});
 
 			await logout(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 204);
 			assert.strictEqual(mockAuthService.logoutUser.mock.calls.length, 1);
 			assert.strictEqual(
@@ -170,18 +164,15 @@ describe('Auth Controller', () => {
 			);
 			assert.ok(res._clearedCookies.has('refreshToken'));
 		});
-
 		it('should clear cookie even without refresh token', async () => {
 			const req = createMockRequest({ cookies: {} });
 
 			await logout(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 204);
 			assert.strictEqual(mockAuthService.logoutUser.mock.calls.length, 0);
 			assert.ok(res._clearedCookies.has('refreshToken'));
 		});
 	});
-
 	describe('refresh', () => {
 		it('should refresh tokens and set new cookie', async () => {
 			mockAuthService.refreshTokens.mock.mockImplementationOnce(() =>
@@ -196,11 +187,9 @@ describe('Auth Controller', () => {
 			});
 
 			await refresh(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, { accessToken: 'new-access-token' });
 			assert.strictEqual(res._cookies.get('refreshToken')?.value, 'new-refresh-token');
 		});
-
 		it('should throw unauthorized when refresh token is missing', async () => {
 			const req = createMockRequest({ cookies: {} });
 
@@ -209,17 +198,14 @@ describe('Auth Controller', () => {
 			}, /Missing refresh token/);
 		});
 	});
-
 	describe('googleAuth', () => {
 		it('should redirect to Google authorization URL', () => {
 			const req = createMockRequest();
 
 			googleAuth(req as never, res as never, () => {});
-
 			assert.strictEqual(res._redirectUrl, 'https://accounts.google.com/oauth');
 		});
 	});
-
 	describe('googleCallback', () => {
 		it('should redirect to success URL for returning users', async () => {
 			mockAuthService.handleGoogleCallback.mock.mockImplementationOnce(() =>
@@ -235,12 +221,10 @@ describe('Auth Controller', () => {
 			});
 
 			await googleCallback(req as never, res as never, () => {});
-
 			assert.strictEqual(res._cookies.get('refreshToken')?.value, 'google-refresh-token');
 			assert.ok(res._redirectUrl?.startsWith('http://localhost:3001/auth/success'));
 			assert.ok(res._redirectUrl?.includes('accessToken=google-access-token'));
 		});
-
 		it('should redirect to setup URL for new users', async () => {
 			mockAuthService.handleGoogleCallback.mock.mockImplementationOnce(() =>
 				Promise.resolve({
@@ -254,11 +238,9 @@ describe('Auth Controller', () => {
 			});
 
 			await googleCallback(req as never, res as never, () => {});
-
 			assert.ok(res._redirectUrl?.startsWith('http://localhost:3001/register/google'));
 			assert.ok(res._redirectUrl?.includes('token=setup-token-xyz'));
 		});
-
 		it('should throw bad request when code is missing', async () => {
 			const req = createMockRequest({ query: {} });
 
@@ -267,10 +249,10 @@ describe('Auth Controller', () => {
 			}, /Missing authorization code/);
 		});
 	});
-
 	describe('googleComplete', () => {
 		it('should complete Google setup and return user', async () => {
 			const mockUser = createMockApiUser();
+
 			mockAuthService.completeGoogleSetup.mock.mockImplementationOnce(() =>
 				Promise.resolve({
 					user: mockUser,
@@ -288,7 +270,6 @@ describe('Auth Controller', () => {
 			});
 
 			await googleComplete(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 201);
 			assert.deepStrictEqual(res._json, {
 				accessToken: 'complete-access-token',

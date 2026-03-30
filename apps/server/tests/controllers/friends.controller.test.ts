@@ -5,7 +5,12 @@
 
 import { describe, it, mock, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { createMockRequest, createMockResponse, createMockUser, type MockResponse } from '../setup.js';
+import {
+	createMockRequest,
+	createMockResponse,
+	createMockUser,
+	type MockResponse
+} from '../setup.js';
 
 // Mock the service module
 const mockFriendsService = {
@@ -30,7 +35,6 @@ const {
 	blockUser,
 	unblockUser
 } = await import('../src/controllers/friends.controller.js');
-
 // Helper to create mock friend data
 const createMockFriend = (overrides = {}) => ({
 	id: 'friend-123',
@@ -42,7 +46,6 @@ const createMockFriend = (overrides = {}) => ({
 	updatedAt: '2024-01-01T00:00:00.000Z',
 	...overrides
 });
-
 const createMockFriendRequest = (overrides = {}) => ({
 	id: 'request-123',
 	requesterId: 'requester-id',
@@ -51,7 +54,6 @@ const createMockFriendRequest = (overrides = {}) => ({
 	createdAt: '2024-01-01T00:00:00.000Z',
 	...overrides
 });
-
 const createMockBlock = (overrides = {}) => ({
 	id: 'block-123',
 	blockerId: 'blocker-id',
@@ -73,10 +75,10 @@ describe('Friends Controller', () => {
 		mockFriendsService.blockUser.mock.resetCalls();
 		mockFriendsService.unblockUser.mock.resetCalls();
 	});
-
 	describe('listFriends', () => {
 		it('should return list of friends wrapped in data object', async () => {
 			const friends = [createMockFriend({ id: 'friend-1' }), createMockFriend({ id: 'friend-2' })];
+
 			mockFriendsService.listFriends.mock.mockImplementationOnce(() => Promise.resolve(friends));
 
 			const req = createMockRequest({
@@ -84,10 +86,8 @@ describe('Friends Controller', () => {
 			});
 
 			await listFriends(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, { data: friends });
 		});
-
 		it('should pass user ID to service', async () => {
 			mockFriendsService.listFriends.mock.mockImplementationOnce(() => Promise.resolve([]));
 
@@ -96,13 +96,11 @@ describe('Friends Controller', () => {
 			});
 
 			await listFriends(req as never, res as never, () => {});
-
 			assert.strictEqual(
 				mockFriendsService.listFriends.mock.calls[0]?.arguments[0],
 				'specific-user-id'
 			);
 		});
-
 		it('should handle empty friends list', async () => {
 			mockFriendsService.listFriends.mock.mockImplementationOnce(() => Promise.resolve([]));
 
@@ -111,17 +109,16 @@ describe('Friends Controller', () => {
 			});
 
 			await listFriends(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, { data: [] });
 		});
 	});
-
 	describe('listRequests', () => {
 		it('should return pending friend requests', async () => {
 			const requests = [
 				createMockFriendRequest({ id: 'req-1' }),
 				createMockFriendRequest({ id: 'req-2' })
 			];
+
 			mockFriendsService.listPendingRequests.mock.mockImplementationOnce(() =>
 				Promise.resolve(requests)
 			);
@@ -131,10 +128,8 @@ describe('Friends Controller', () => {
 			});
 
 			await listRequests(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, { data: requests });
 		});
-
 		it('should pass user ID to service', async () => {
 			mockFriendsService.listPendingRequests.mock.mockImplementationOnce(() => Promise.resolve([]));
 
@@ -143,20 +138,19 @@ describe('Friends Controller', () => {
 			});
 
 			await listRequests(req as never, res as never, () => {});
-
 			assert.strictEqual(
 				mockFriendsService.listPendingRequests.mock.calls[0]?.arguments[0],
 				'request-checker'
 			);
 		});
 	});
-
 	describe('sendRequest', () => {
 		it('should send friend request and return 201', async () => {
 			const friendship = createMockFriendRequest({
 				requesterId: 'user-123',
 				addresseeId: 'target-user'
 			});
+
 			mockFriendsService.sendFriendRequest.mock.mockImplementationOnce(() =>
 				Promise.resolve(friendship)
 			);
@@ -167,11 +161,9 @@ describe('Friends Controller', () => {
 			});
 
 			await sendRequest(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 201);
 			assert.deepStrictEqual(res._json, friendship);
 		});
-
 		it('should pass user ID and addressee ID to service', async () => {
 			mockFriendsService.sendFriendRequest.mock.mockImplementationOnce(() =>
 				Promise.resolve(createMockFriendRequest())
@@ -183,7 +175,6 @@ describe('Friends Controller', () => {
 			});
 
 			await sendRequest(req as never, res as never, () => {});
-
 			assert.strictEqual(
 				mockFriendsService.sendFriendRequest.mock.calls[0]?.arguments[0],
 				'requester-user'
@@ -194,10 +185,10 @@ describe('Friends Controller', () => {
 			);
 		});
 	});
-
 	describe('respondToRequest', () => {
 		it('should accept friend request and return friendship', async () => {
 			const friendship = createMockFriendRequest({ status: 'ACCEPTED' });
+
 			mockFriendsService.respondToRequest.mock.mockImplementationOnce(() =>
 				Promise.resolve(friendship)
 			);
@@ -209,10 +200,8 @@ describe('Friends Controller', () => {
 			});
 
 			await respondToRequest(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, friendship);
 		});
-
 		it('should reject friend request and return message', async () => {
 			mockFriendsService.respondToRequest.mock.mockImplementationOnce(() => Promise.resolve(null));
 
@@ -223,11 +212,9 @@ describe('Friends Controller', () => {
 			});
 
 			await respondToRequest(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 200);
 			assert.deepStrictEqual(res._json, { message: 'Request rejected' });
 		});
-
 		it('should pass user ID, request ID, and action to service', async () => {
 			mockFriendsService.respondToRequest.mock.mockImplementationOnce(() =>
 				Promise.resolve(createMockFriendRequest())
@@ -240,7 +227,6 @@ describe('Friends Controller', () => {
 			});
 
 			await respondToRequest(req as never, res as never, () => {});
-
 			assert.strictEqual(
 				mockFriendsService.respondToRequest.mock.calls[0]?.arguments[0],
 				'responder-user'
@@ -249,13 +235,9 @@ describe('Friends Controller', () => {
 				mockFriendsService.respondToRequest.mock.calls[0]?.arguments[1],
 				'pending-request-123'
 			);
-			assert.strictEqual(
-				mockFriendsService.respondToRequest.mock.calls[0]?.arguments[2],
-				'accept'
-			);
+			assert.strictEqual(mockFriendsService.respondToRequest.mock.calls[0]?.arguments[2], 'accept');
 		});
 	});
-
 	describe('removeFriend', () => {
 		it('should remove friend and return 204', async () => {
 			mockFriendsService.removeFriend.mock.mockImplementationOnce(() => Promise.resolve());
@@ -266,10 +248,8 @@ describe('Friends Controller', () => {
 			});
 
 			await removeFriend(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 204);
 		});
-
 		it('should pass user ID and friend ID to service', async () => {
 			mockFriendsService.removeFriend.mock.mockImplementationOnce(() => Promise.resolve());
 
@@ -279,7 +259,6 @@ describe('Friends Controller', () => {
 			});
 
 			await removeFriend(req as never, res as never, () => {});
-
 			assert.strictEqual(
 				mockFriendsService.removeFriend.mock.calls[0]?.arguments[0],
 				'remover-user'
@@ -290,10 +269,10 @@ describe('Friends Controller', () => {
 			);
 		});
 	});
-
 	describe('blockUser', () => {
 		it('should block user and return 201', async () => {
 			const block = createMockBlock({ blockerId: 'user-123', blockedId: 'blocked-user' });
+
 			mockFriendsService.blockUser.mock.mockImplementationOnce(() => Promise.resolve(block));
 
 			const req = createMockRequest({
@@ -302,11 +281,9 @@ describe('Friends Controller', () => {
 			});
 
 			await blockUser(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 201);
 			assert.deepStrictEqual(res._json, block);
 		});
-
 		it('should pass user ID and target ID to service', async () => {
 			mockFriendsService.blockUser.mock.mockImplementationOnce(() =>
 				Promise.resolve(createMockBlock())
@@ -318,15 +295,10 @@ describe('Friends Controller', () => {
 			});
 
 			await blockUser(req as never, res as never, () => {});
-
 			assert.strictEqual(mockFriendsService.blockUser.mock.calls[0]?.arguments[0], 'blocker-user');
-			assert.strictEqual(
-				mockFriendsService.blockUser.mock.calls[0]?.arguments[1],
-				'user-to-block'
-			);
+			assert.strictEqual(mockFriendsService.blockUser.mock.calls[0]?.arguments[1], 'user-to-block');
 		});
 	});
-
 	describe('unblockUser', () => {
 		it('should unblock user and return 204', async () => {
 			mockFriendsService.unblockUser.mock.mockImplementationOnce(() => Promise.resolve());
@@ -337,10 +309,8 @@ describe('Friends Controller', () => {
 			});
 
 			await unblockUser(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 204);
 		});
-
 		it('should pass user ID and blocked user ID to service', async () => {
 			mockFriendsService.unblockUser.mock.mockImplementationOnce(() => Promise.resolve());
 
@@ -350,7 +320,6 @@ describe('Friends Controller', () => {
 			});
 
 			await unblockUser(req as never, res as never, () => {});
-
 			assert.strictEqual(
 				mockFriendsService.unblockUser.mock.calls[0]?.arguments[0],
 				'unblocker-user'

@@ -5,7 +5,12 @@
 
 import { describe, it, mock, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { createMockRequest, createMockResponse, createMockUser, type MockResponse } from '../setup.js';
+import {
+	createMockRequest,
+	createMockResponse,
+	createMockUser,
+	type MockResponse
+} from '../setup.js';
 
 // Mock the service module
 const mockSearchService = {
@@ -26,7 +31,6 @@ describe('Search Controller', () => {
 		mockSearchService.searchUsers.mock.resetCalls();
 		mockSearchService.searchMessages.mock.resetCalls();
 	});
-
 	describe('search', () => {
 		it('should search users when type is users', async () => {
 			const userResults = {
@@ -36,9 +40,8 @@ describe('Search Controller', () => {
 				],
 				pagination: { page: 1, limit: 10, total: 2, totalPages: 1 }
 			};
-			mockSearchService.searchUsers.mock.mockImplementationOnce(() =>
-				Promise.resolve(userResults)
-			);
+
+			mockSearchService.searchUsers.mock.mockImplementationOnce(() => Promise.resolve(userResults));
 
 			const req = createMockRequest({
 				user: createMockUser({ sub: 'searcher-user' }),
@@ -46,11 +49,9 @@ describe('Search Controller', () => {
 			});
 
 			await search(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, userResults);
 			assert.strictEqual(mockSearchService.searchMessages.mock.calls.length, 0);
 		});
-
 		it('should search messages when type is messages', async () => {
 			const messageResults = {
 				data: [
@@ -59,6 +60,7 @@ describe('Search Controller', () => {
 				],
 				pagination: { page: 1, limit: 10, total: 2, totalPages: 1 }
 			};
+
 			mockSearchService.searchMessages.mock.mockImplementationOnce(() =>
 				Promise.resolve(messageResults)
 			);
@@ -69,11 +71,9 @@ describe('Search Controller', () => {
 			});
 
 			await search(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, messageResults);
 			assert.strictEqual(mockSearchService.searchUsers.mock.calls.length, 0);
 		});
-
 		it('should pass user ID and params to searchUsers', async () => {
 			mockSearchService.searchUsers.mock.mockImplementationOnce(() =>
 				Promise.resolve({ data: [], pagination: {} })
@@ -86,11 +86,12 @@ describe('Search Controller', () => {
 			});
 
 			await search(req as never, res as never, () => {});
-
 			assert.strictEqual(mockSearchService.searchUsers.mock.calls[0]?.arguments[0], 'user-xyz');
-			assert.deepStrictEqual(mockSearchService.searchUsers.mock.calls[0]?.arguments[1], queryParams);
+			assert.deepStrictEqual(
+				mockSearchService.searchUsers.mock.calls[0]?.arguments[1],
+				queryParams
+			);
 		});
-
 		it('should pass user ID and params to searchMessages', async () => {
 			mockSearchService.searchMessages.mock.mockImplementationOnce(() =>
 				Promise.resolve({ data: [], pagination: {} })
@@ -103,19 +104,18 @@ describe('Search Controller', () => {
 			});
 
 			await search(req as never, res as never, () => {});
-
 			assert.strictEqual(mockSearchService.searchMessages.mock.calls[0]?.arguments[0], 'user-abc');
 			assert.deepStrictEqual(
 				mockSearchService.searchMessages.mock.calls[0]?.arguments[1],
 				queryParams
 			);
 		});
-
 		it('should handle empty search results for users', async () => {
 			const emptyResults = {
 				data: [],
 				pagination: { page: 1, limit: 10, total: 0, totalPages: 0 }
 			};
+
 			mockSearchService.searchUsers.mock.mockImplementationOnce(() =>
 				Promise.resolve(emptyResults)
 			);
@@ -126,15 +126,14 @@ describe('Search Controller', () => {
 			});
 
 			await search(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, emptyResults);
 		});
-
 		it('should handle empty search results for messages', async () => {
 			const emptyResults = {
 				data: [],
 				pagination: { page: 1, limit: 10, total: 0, totalPages: 0 }
 			};
+
 			mockSearchService.searchMessages.mock.mockImplementationOnce(() =>
 				Promise.resolve(emptyResults)
 			);
@@ -145,10 +144,8 @@ describe('Search Controller', () => {
 			});
 
 			await search(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, emptyResults);
 		});
-
 		it('should search messages when type is not users', async () => {
 			mockSearchService.searchMessages.mock.mockImplementationOnce(() =>
 				Promise.resolve({ data: [], pagination: {} })
@@ -160,7 +157,6 @@ describe('Search Controller', () => {
 			});
 
 			await search(req as never, res as never, () => {});
-
 			// Should fall through to searchMessages since type !== 'users'
 			assert.strictEqual(mockSearchService.searchMessages.mock.calls.length, 1);
 			assert.strictEqual(mockSearchService.searchUsers.mock.calls.length, 0);

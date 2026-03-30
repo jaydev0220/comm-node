@@ -3,7 +3,7 @@
  * Uses Node.js built-in test runner with tsx.
  */
 
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, NextFunction } from 'express';
 import type { TokenPayload } from '../src/lib/jwt.js';
 
 /**
@@ -110,7 +110,9 @@ const createStatusMock = (res: MockResponse) => {
 		res._status = code;
 		return res;
 	};
+
 	fn.mock = { calls: [] as number[][] };
+
 	const original = fn;
 	return Object.assign(
 		(code: number) => {
@@ -126,7 +128,9 @@ const createJsonMock = (res: MockResponse) => {
 		res._json = data;
 		return res;
 	};
+
 	fn.mock = { calls: [] as unknown[][] };
+
 	const original = fn;
 	return Object.assign(
 		(data: unknown) => {
@@ -142,7 +146,9 @@ const createCookieMock = (res: MockResponse) => {
 		res._cookies.set(name, { value, options });
 		return res;
 	};
+
 	fn.mock = { calls: [] as unknown[][] };
+
 	const original = fn;
 	return Object.assign(
 		(name: string, value: string, options?: unknown) => {
@@ -158,7 +164,9 @@ const createClearCookieMock = (res: MockResponse) => {
 		res._clearedCookies.add(name);
 		return res;
 	};
+
 	fn.mock = { calls: [] as string[][] };
+
 	const original = fn;
 	return Object.assign(
 		(name: string) => {
@@ -174,7 +182,9 @@ const createRedirectMock = (res: MockResponse) => {
 		res._redirectUrl = url;
 		return res;
 	};
+
 	fn.mock = { calls: [] as string[][] };
+
 	const original = fn;
 	return Object.assign(
 		(url: string) => {
@@ -199,7 +209,6 @@ export const createMockResponse = (): MockResponse => {
 	res.cookie = createCookieMock(res);
 	res.clearCookie = createClearCookieMock(res);
 	res.redirect = createRedirectMock(res);
-
 	return res;
 };
 
@@ -211,6 +220,7 @@ export const createMockNext = (): NextFunction & { mock: { calls: unknown[][] } 
 	const fn = ((err?: unknown) => {
 		calls.push(err !== undefined ? [err] : []);
 	}) as NextFunction & { mock: { calls: unknown[][] } };
+
 	fn.mock = { calls };
 	return fn;
 };
@@ -228,11 +238,12 @@ export const assertThrowsAppError = async (
 		throw new Error('Expected function to throw');
 	} catch (error) {
 		const appError = error as { status?: number; code?: string; message?: string };
+
 		if (appError.status !== expectedStatus) {
-			throw new Error(`Expected status ${expectedStatus}, got ${appError.status}`);
+			throw new Error(`Expected status ${expectedStatus}, got ${appError.status}`, { cause: error });
 		}
 		if (appError.code !== expectedCode) {
-			throw new Error(`Expected code ${expectedCode}, got ${appError.code}`);
+			throw new Error(`Expected code ${expectedCode}, got ${appError.code}`, { cause: error });
 		}
 	}
 };
@@ -251,6 +262,7 @@ export const assertJsonResponse = (
 	if (expectedData !== undefined) {
 		const actualJson = JSON.stringify(res._json);
 		const expectedJson = JSON.stringify(expectedData);
+
 		if (actualJson !== expectedJson) {
 			throw new Error(`Expected JSON ${expectedJson}, got ${actualJson}`);
 		}
@@ -268,6 +280,7 @@ export const createMockFn = <T extends (...args: unknown[]) => unknown>(
 		calls.push(args);
 		return implementation?.(...args);
 	}) as T & { mock: { calls: Parameters<T>[] } };
+
 	fn.mock = { calls };
 	return fn;
 };
@@ -283,6 +296,7 @@ export const createMockAsyncFn = <T>(
 		calls.push(args);
 		return returnValue;
 	}) as ((...args: unknown[]) => Promise<T>) & { mock: { calls: unknown[][] } };
+
 	fn.mock = { calls };
 	return fn;
 };
@@ -298,6 +312,7 @@ export const createMockRejectFn = (
 		calls.push(args);
 		throw error;
 	}) as ((...args: unknown[]) => Promise<never>) & { mock: { calls: unknown[][] } };
+
 	fn.mock = { calls };
 	return fn;
 };

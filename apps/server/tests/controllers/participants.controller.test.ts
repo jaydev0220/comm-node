@@ -5,7 +5,12 @@
 
 import { describe, it, mock, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { createMockRequest, createMockResponse, createMockUser, type MockResponse } from '../setup.js';
+import {
+	createMockRequest,
+	createMockResponse,
+	createMockUser,
+	type MockResponse
+} from '../setup.js';
 
 // Mock prisma
 const mockPrisma = {
@@ -20,7 +25,6 @@ const mockPrisma = {
 		findUnique: mock.fn()
 	}
 };
-
 const mockChatsService = {
 	getParticipantRole: mock.fn()
 };
@@ -29,10 +33,8 @@ mock.module('../src/lib/db.js', { namedExports: { prisma: mockPrisma } });
 mock.module('../src/services/chats.service.js', { namedExports: mockChatsService });
 
 // Import controller after mocking
-const { listParticipants, addParticipant, updateRole, removeParticipant } = await import(
-	'../src/controllers/participants.controller.js'
-);
-
+const { listParticipants, addParticipant, updateRole, removeParticipant } =
+	await import('../src/controllers/participants.controller.js');
 // Helper to create mock participant data
 const createMockDbParticipant = (overrides = {}) => ({
 	user: {
@@ -62,7 +64,6 @@ describe('Participants Controller', () => {
 		mockPrisma.user.findUnique.mock.resetCalls();
 		mockChatsService.getParticipantRole.mock.resetCalls();
 	});
-
 	describe('listParticipants', () => {
 		it('should return list of participants', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
@@ -81,11 +82,9 @@ describe('Participants Controller', () => {
 			});
 
 			await listParticipants(req as never, res as never, () => {});
-
 			assert.ok(Array.isArray(res._json));
 			assert.strictEqual((res._json as unknown[]).length, 2);
 		});
-
 		it('should throw not found when user is not a member', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() => Promise.resolve(null));
 
@@ -101,7 +100,6 @@ describe('Participants Controller', () => {
 				{ message: 'Chat not found or not a member' }
 			);
 		});
-
 		it('should order participants by joinedAt ascending', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('MEMBER')
@@ -118,10 +116,10 @@ describe('Participants Controller', () => {
 			await listParticipants(req as never, res as never, () => {});
 
 			const findManyCall = mockPrisma.conversationParticipant.findMany.mock.calls[0];
+
 			assert.deepStrictEqual(findManyCall?.arguments[0]?.orderBy, { joinedAt: 'asc' });
 		});
 	});
-
 	describe('addParticipant', () => {
 		it('should add participant and return 201', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
@@ -144,10 +142,8 @@ describe('Participants Controller', () => {
 			});
 
 			await addParticipant(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 201);
 		});
-
 		it('should throw forbidden when member tries to add participant', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('MEMBER')
@@ -166,7 +162,6 @@ describe('Participants Controller', () => {
 				{ message: 'Only admins and owners can add participants' }
 			);
 		});
-
 		it('should throw conflict when user is already a participant', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('ADMIN')
@@ -188,7 +183,6 @@ describe('Participants Controller', () => {
 				{ message: 'User is already a participant' }
 			);
 		});
-
 		it('should throw not found when target user does not exist', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('ADMIN')
@@ -211,7 +205,6 @@ describe('Participants Controller', () => {
 				{ message: 'User not found' }
 			);
 		});
-
 		it('should allow owner to add participant', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('OWNER')
@@ -233,11 +226,9 @@ describe('Participants Controller', () => {
 			});
 
 			await addParticipant(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 201);
 		});
 	});
-
 	describe('updateRole', () => {
 		it('should update participant role', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
@@ -257,10 +248,8 @@ describe('Participants Controller', () => {
 			});
 
 			await updateRole(req as never, res as never, () => {});
-
 			assert.ok(res._json);
 		});
-
 		it('should throw forbidden when non-owner tries to update role', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('ADMIN')
@@ -279,7 +268,6 @@ describe('Participants Controller', () => {
 				{ message: 'Only owners can update participant roles' }
 			);
 		});
-
 		it('should throw bad request when trying to change own role', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('OWNER')
@@ -298,7 +286,6 @@ describe('Participants Controller', () => {
 				{ message: 'Cannot change your own role' }
 			);
 		});
-
 		it('should throw forbidden when trying to change owner role', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('OWNER')
@@ -321,7 +308,6 @@ describe('Participants Controller', () => {
 			);
 		});
 	});
-
 	describe('removeParticipant', () => {
 		it('should remove participant and return 204', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
@@ -340,10 +326,8 @@ describe('Participants Controller', () => {
 			});
 
 			await removeParticipant(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 204);
 		});
-
 		it('should allow member to leave chat', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('MEMBER')
@@ -358,10 +342,8 @@ describe('Participants Controller', () => {
 			});
 
 			await removeParticipant(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 204);
 		});
-
 		it('should throw forbidden when member tries to remove others', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('MEMBER')
@@ -379,7 +361,6 @@ describe('Participants Controller', () => {
 				{ message: 'Only admins and owners can remove participants' }
 			);
 		});
-
 		it('should throw bad request when owner tries to leave', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('OWNER')
@@ -397,7 +378,6 @@ describe('Participants Controller', () => {
 				{ message: 'Owner cannot leave the chat. Transfer ownership first.' }
 			);
 		});
-
 		it('should throw forbidden when admin tries to remove another admin', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('ADMIN')
@@ -418,7 +398,6 @@ describe('Participants Controller', () => {
 				{ message: 'Admins can only remove members' }
 			);
 		});
-
 		it('should throw forbidden when trying to remove owner', async () => {
 			mockChatsService.getParticipantRole.mock.mockImplementationOnce(() =>
 				Promise.resolve('OWNER')

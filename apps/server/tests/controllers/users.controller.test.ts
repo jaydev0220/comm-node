@@ -24,9 +24,8 @@ const mockUsersService = {
 mock.module('../src/services/users.service.js', { namedExports: mockUsersService });
 
 // Import controller after mocking
-const { getMe, updateMe, deleteMe, searchUsers } = await import(
-	'../src/controllers/users.controller.js'
-);
+const { getMe, updateMe, deleteMe, searchUsers } =
+	await import('../src/controllers/users.controller.js');
 
 describe('Users Controller', () => {
 	let res: MockResponse;
@@ -38,10 +37,10 @@ describe('Users Controller', () => {
 		mockUsersService.deleteUser.mock.resetCalls();
 		mockUsersService.searchUsers.mock.resetCalls();
 	});
-
 	describe('getMe', () => {
 		it('should return current user', async () => {
 			const mockUser = createMockApiUser();
+
 			mockUsersService.findById.mock.mockImplementationOnce(() => Promise.resolve(mockUser));
 
 			const req = createMockRequest({
@@ -49,11 +48,9 @@ describe('Users Controller', () => {
 			});
 
 			await getMe(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, mockUser);
 			assert.strictEqual(mockUsersService.findById.mock.calls[0]?.arguments[0], 'user-123');
 		});
-
 		it('should throw not found when user does not exist', async () => {
 			mockUsersService.findById.mock.mockImplementationOnce(() => Promise.resolve(null));
 
@@ -68,7 +65,6 @@ describe('Users Controller', () => {
 				{ message: 'User not found' }
 			);
 		});
-
 		it('should use user ID from authenticated request', async () => {
 			mockUsersService.findById.mock.mockImplementationOnce(() =>
 				Promise.resolve(createMockApiUser())
@@ -79,17 +75,16 @@ describe('Users Controller', () => {
 			});
 
 			await getMe(req as never, res as never, () => {});
-
 			assert.strictEqual(
 				mockUsersService.findById.mock.calls[0]?.arguments[0],
 				'specific-user-id-456'
 			);
 		});
 	});
-
 	describe('updateMe', () => {
 		it('should update current user', async () => {
 			const updatedUser = createMockApiUser({ displayName: 'Updated Name' });
+
 			mockUsersService.updateUser.mock.mockImplementationOnce(() => Promise.resolve(updatedUser));
 
 			const req = createMockRequest({
@@ -98,10 +93,8 @@ describe('Users Controller', () => {
 			});
 
 			await updateMe(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, updatedUser);
 		});
-
 		it('should pass user ID and update data to service', async () => {
 			mockUsersService.updateUser.mock.mockImplementationOnce(() =>
 				Promise.resolve(createMockApiUser())
@@ -114,11 +107,9 @@ describe('Users Controller', () => {
 			});
 
 			await updateMe(req as never, res as never, () => {});
-
 			assert.strictEqual(mockUsersService.updateUser.mock.calls[0]?.arguments[0], 'user-789');
 			assert.deepStrictEqual(mockUsersService.updateUser.mock.calls[0]?.arguments[1], updateData);
 		});
-
 		it('should handle partial updates', async () => {
 			mockUsersService.updateUser.mock.mockImplementationOnce(() =>
 				Promise.resolve(createMockApiUser({ displayName: 'Only Name' }))
@@ -130,11 +121,9 @@ describe('Users Controller', () => {
 			});
 
 			await updateMe(req as never, res as never, () => {});
-
 			assert.strictEqual(mockUsersService.updateUser.mock.calls.length, 1);
 		});
 	});
-
 	describe('deleteMe', () => {
 		it('should delete current user and return 204', async () => {
 			mockUsersService.deleteUser.mock.mockImplementationOnce(() => Promise.resolve());
@@ -144,14 +133,9 @@ describe('Users Controller', () => {
 			});
 
 			await deleteMe(req as never, res as never, () => {});
-
 			assert.strictEqual(res._status, 204);
-			assert.strictEqual(
-				mockUsersService.deleteUser.mock.calls[0]?.arguments[0],
-				'user-to-delete'
-			);
+			assert.strictEqual(mockUsersService.deleteUser.mock.calls[0]?.arguments[0], 'user-to-delete');
 		});
-
 		it('should call delete service with correct user ID', async () => {
 			mockUsersService.deleteUser.mock.mockImplementationOnce(() => Promise.resolve());
 
@@ -160,31 +144,26 @@ describe('Users Controller', () => {
 			});
 
 			await deleteMe(req as never, res as never, () => {});
-
 			assert.strictEqual(mockUsersService.deleteUser.mock.calls.length, 1);
 			assert.strictEqual(mockUsersService.deleteUser.mock.calls[0]?.arguments[0], 'delete-me-123');
 		});
 	});
-
 	describe('searchUsers', () => {
 		it('should return search results with pagination', async () => {
 			const searchResult = {
 				data: [createMockApiUser({ id: 'user-1' }), createMockApiUser({ id: 'user-2' })],
 				pagination: { page: 1, limit: 10, total: 2, totalPages: 1 }
 			};
-			mockUsersService.searchUsers.mock.mockImplementationOnce(() =>
-				Promise.resolve(searchResult)
-			);
+
+			mockUsersService.searchUsers.mock.mockImplementationOnce(() => Promise.resolve(searchResult));
 
 			const req = createMockRequest({
 				query: { q: 'test', page: '1', limit: '10' }
 			});
 
 			await searchUsers(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, searchResult);
 		});
-
 		it('should pass query params to service', async () => {
 			mockUsersService.searchUsers.mock.mockImplementationOnce(() =>
 				Promise.resolve({ data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } })
@@ -194,15 +173,14 @@ describe('Users Controller', () => {
 			const req = createMockRequest({ query: queryParams });
 
 			await searchUsers(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(mockUsersService.searchUsers.mock.calls[0]?.arguments[0], queryParams);
 		});
-
 		it('should handle empty search results', async () => {
 			const emptyResult = {
 				data: [],
 				pagination: { page: 1, limit: 10, total: 0, totalPages: 0 }
 			};
+
 			mockUsersService.searchUsers.mock.mockImplementationOnce(() => Promise.resolve(emptyResult));
 
 			const req = createMockRequest({
@@ -210,7 +188,6 @@ describe('Users Controller', () => {
 			});
 
 			await searchUsers(req as never, res as never, () => {});
-
 			assert.deepStrictEqual(res._json, emptyResult);
 		});
 	});
