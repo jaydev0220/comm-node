@@ -10,6 +10,8 @@
 		"format": "prettier --write --ignore-path ../../.prettierignore ."
 	},
 	"dependencies": {
+		"@icons-pack/react-simple-icons": "catalog:",
+		"lucide-react": "catalog:",
 		"next": "catalog:client",
 		"react": "catalog:client",
 		"react-dom": "catalog:client"
