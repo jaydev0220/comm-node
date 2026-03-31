@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 export const userSchema = z.object({
-  id: z.string().uuid(),
-  email: z.string().email(),
+  id: z.uuid(),
+  email: z.email(),
   username: z.string(),
   displayName: z.string(),
-  avatarUrl: z.string().url().optional(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  avatarUrl: z.url().optional(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
 });
 
 export const updateUserRequestSchema = z
@@ -19,7 +19,7 @@ export const updateUserRequestSchema = z
       .max(32)
       .regex(/^[a-z0-9_]+$/)
       .optional(),
-    avatarUrl: z.string().url().optional(),
+    avatarUrl: z.url().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field is required",

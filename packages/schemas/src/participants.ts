@@ -6,11 +6,11 @@ export const participantRoleSchema = z.enum(["OWNER", "ADMIN", "MEMBER"]);
 export const participantSchema = z.object({
   user: userSchema,
   role: participantRoleSchema,
-  joinedAt: z.string().datetime(),
+  joinedAt: z.iso.datetime(),
 });
 
 export const addParticipantRequestSchema = z.object({
-  userId: z.string().uuid(),
+  userId: z.uuid(),
 });
 
 // Note: Can only assign ADMIN or MEMBER via API, not OWNER

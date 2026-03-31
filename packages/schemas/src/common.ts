@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const uuidSchema = z.string().uuid();
+export const uuidSchema = z.uuid();
 
 export const errorDetailSchema = z.object({
   field: z.string().optional(),

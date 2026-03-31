@@ -3,7 +3,7 @@ import { z } from "zod";
 import { userSchema } from "./users";
 
 export const registerRequestSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   username: z
     .string()
     .min(3)
@@ -14,7 +14,7 @@ export const registerRequestSchema = z.object({
 });
 
 export const loginRequestSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string(),
 });
 
@@ -39,7 +39,7 @@ export const googleCompleteRequestSchema = z.object({
     .max(32)
     .regex(/^[a-z0-9_]+$/),
   displayName: z.string().min(1).max(64),
-  avatarUrl: z.string().url().optional(),
+  avatarUrl: z.url().optional(),
 });
 
 // Types

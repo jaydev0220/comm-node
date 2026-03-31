@@ -7,14 +7,14 @@ export const conversationTypeSchema = z.enum(["DIRECT", "GROUP"]);
 // Create chat discriminated union
 export const createDirectChatSchema = z.object({
   type: z.literal("DIRECT"),
-  participantId: z.string().uuid(),
+  participantId: z.uuid(),
 });
 
 export const createGroupChatSchema = z.object({
   type: z.literal("GROUP"),
   name: z.string().min(1).max(100),
-  avatarUrl: z.string().url().optional(),
-  memberIds: z.array(z.string().uuid()).min(1).max(99),
+  avatarUrl: z.url().optional(),
+  memberIds: z.array(z.uuid()).min(1).max(99),
 });
 
 export const createChatRequestSchema = z.discriminatedUnion("type", [
@@ -25,7 +25,7 @@ export const createChatRequestSchema = z.discriminatedUnion("type", [
 export const updateChatRequestSchema = z
   .object({
     name: z.string().min(1).max(100).optional(),
-    avatarUrl: z.string().url().optional(),
+    avatarUrl: z.url().optional(),
   })
   .refine((data) => data.name !== undefined || data.avatarUrl !== undefined, {
     message: "At least one field is required",
@@ -37,14 +37,14 @@ export const listChatsParamsSchema = z.object({
 });
 
 export const chatSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   type: conversationTypeSchema,
   name: z.string().optional(),
-  avatarUrl: z.string().url().optional(),
+  avatarUrl: z.url().optional(),
   participants: z.array(participantSchema),
   lastMessage: messageSchema.optional(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
 });
 
 // Types

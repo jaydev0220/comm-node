@@ -4,16 +4,16 @@ import { userSchema } from "./users.js";
 export const friendshipStatusSchema = z.enum(["PENDING", "ACCEPTED", "BLOCKED"]);
 
 export const friendshipSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   status: friendshipStatusSchema,
   requester: userSchema,
   addressee: userSchema,
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  createdAt: z.iso,
+  updatedAt: z.iso,
 });
 
 export const sendFriendRequestSchema = z.object({
-  addresseeId: z.string().uuid(),
+  addresseeId: z.uuid(),
 });
 
 export const respondFriendRequestSchema = z.object({
@@ -21,7 +21,7 @@ export const respondFriendRequestSchema = z.object({
 });
 
 export const blockUserRequestSchema = z.object({
-  targetId: z.string().uuid(),
+  targetId: z.uuid(),
 });
 
 // Types

@@ -5,7 +5,7 @@ import { z } from "zod";
 // ============================================================================
 
 /** UUID schema for requestId correlation */
-export const requestIdSchema = z.string().uuid();
+export const requestIdSchema = z.uuid();
 export type RequestId = z.infer<typeof requestIdSchema>;
 
 /** Error codes returned by the WebSocket server */
@@ -41,17 +41,17 @@ export type WsServerEvent = z.infer<typeof wsServerEventSchema>;
 
 /** Simplified user for WS messages (per AsyncAPI spec) */
 export const wsUserSchema = z.object({
-	id: z.string().uuid(),
+	id: z.uuid(),
 	username: z.string(),
 	displayName: z.string(),
-	avatarUrl: z.string().url().nullable(),
+	avatarUrl: z.url().nullable(),
 });
 export type WsUser = z.infer<typeof wsUserSchema>;
 
 /** Attachment schema for WS messages */
 export const wsAttachmentSchema = z.object({
-	id: z.string().uuid(),
-	url: z.string().url(),
+	id: z.uuid(),
+	url: z.url(),
 	mimeType: z.string(),
 	size: z.number().int(),
 	name: z.string(),
@@ -60,10 +60,10 @@ export type WsAttachment = z.infer<typeof wsAttachmentSchema>;
 
 /** OG embed schema for WS messages */
 export const wsOgEmbedSchema = z.object({
-	url: z.string().url(),
+	url: z.url(),
 	title: z.string(),
 	description: z.string().nullable(),
-	image: z.string().url().nullable(),
+	image: z.url().nullable(),
 });
 export type WsOgEmbed = z.infer<typeof wsOgEmbedSchema>;
 
@@ -73,16 +73,16 @@ export type WsMessageType = z.infer<typeof wsMessageTypeSchema>;
 
 /** Full message schema for WS (uses conversationId, not chatId) */
 export const wsMessageSchema = z.object({
-	id: z.string().uuid(),
-	conversationId: z.string().uuid(),
+	id: z.uuid(),
+	conversationId: z.uuid(),
 	sender: wsUserSchema,
 	content: z.string().nullable(),
 	type: wsMessageTypeSchema,
 	attachments: z.array(wsAttachmentSchema),
 	ogEmbed: wsOgEmbedSchema.nullable(),
-	editedAt: z.string().datetime().nullable(),
-	deletedAt: z.string().datetime().nullable(),
-	createdAt: z.string().datetime(),
+	editedAt: z.iso.datetime().nullable(),
+	deletedAt: z.iso.datetime().nullable(),
+	createdAt: z.iso.datetime(),
 });
 export type WsMessage = z.infer<typeof wsMessageSchema>;
 
@@ -93,9 +93,9 @@ export type WsMessage = z.infer<typeof wsMessageSchema>;
 /** message:send payload */
 export const messageSendPayloadSchema = z
 	.object({
-		conversationId: z.string().uuid(),
+		conversationId: z.uuid(),
 		content: z.string().min(1).max(4000).optional(),
-		attachmentIds: z.array(z.string().uuid()).max(10).optional(),
+		attachmentIds: z.array(z.uuid()).max(10).optional(),
 	})
 	.refine((data) => data.content ?? data.attachmentIds, {
 		message: "Message must have content or attachmentIds",
@@ -111,7 +111,7 @@ export type MessageSend = z.infer<typeof messageSendSchema>;
 
 /** message:edit payload */
 export const messageEditPayloadSchema = z.object({
-	messageId: z.string().uuid(),
+	messageId: z.uuid(),
 	content: z.string().min(1).max(4000),
 });
 export type MessageEditPayload = z.infer<typeof messageEditPayloadSchema>;
@@ -125,7 +125,7 @@ export type MessageEdit = z.infer<typeof messageEditSchema>;
 
 /** message:delete payload */
 export const messageDeletePayloadSchema = z.object({
-	messageId: z.string().uuid(),
+	messageId: z.uuid(),
 });
 export type MessageDeletePayload = z.infer<typeof messageDeletePayloadSchema>;
 
@@ -157,9 +157,9 @@ export type MessageNew = z.infer<typeof messageNewSchema>;
 
 /** message:edited - partial update broadcast */
 export const messageEditedPayloadSchema = z.object({
-	messageId: z.string().uuid(),
+	messageId: z.uuid(),
 	content: z.string(),
-	editedAt: z.string().datetime(),
+	editedAt: z.iso.datetime(),
 });
 export type MessageEditedPayload = z.infer<typeof messageEditedPayloadSchema>;
 
@@ -171,7 +171,7 @@ export type MessageEdited = z.infer<typeof messageEditedSchema>;
 
 /** message:deleted - deletion notification */
 export const messageDeletedPayloadSchema = z.object({
-	messageId: z.string().uuid(),
+	messageId: z.uuid(),
 });
 export type MessageDeletedPayload = z.infer<typeof messageDeletedPayloadSchema>;
 

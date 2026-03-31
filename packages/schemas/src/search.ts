@@ -5,7 +5,7 @@ export const searchTypeSchema = z.enum(["messages", "users"]);
 export const searchParamsSchema = z.object({
   q: z.string().min(1).max(200),
   type: searchTypeSchema,
-  chatId: z.string().uuid().optional(),
+  chatId: z.uuid().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
