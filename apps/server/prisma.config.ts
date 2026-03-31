@@ -1,7 +1,10 @@
+import { existsSync } from 'node:fs';
 import { config } from 'dotenv';
 import { defineConfig, env } from 'prisma/config';
 
-config({ path: '.env.development' });
+// Load .env.development for local dev, .env for production/docker
+const envFile = existsSync('.env.development') ? '.env.development' : '.env';
+config({ path: envFile });
 
 export default defineConfig({
 	schema: 'prisma/schema.prisma',

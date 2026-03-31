@@ -78,10 +78,9 @@ COPY --from=prod-deps /app/packages/schemas/node_modules ./packages/schemas/node
 COPY --from=builder /app/apps/server/build ./apps/server/build
 COPY --from=builder /app/apps/server/package.json ./apps/server/
 
-# Copy Prisma schema and generated client
-COPY --from=builder /app/apps/server/prisma ./apps/server/prisma
-COPY --from=builder /app/apps/server/node_modules/.prisma ./apps/server/node_modules/.prisma
-COPY --from=builder /app/apps/server/node_modules/@prisma ./apps/server/node_modules/@prisma
+# Copy Prisma schema and generated client (Prisma v7 uses custom output path)
+COPY --from=builder /app/apps/server/prisma/schema.prisma ./apps/server/prisma/
+COPY --from=builder /app/apps/server/prisma/generated ./apps/server/prisma/generated
 
 # Copy built schemas package
 COPY --from=builder /app/packages/schemas/build ./packages/schemas/build 2>/dev/null || true
