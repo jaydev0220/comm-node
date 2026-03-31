@@ -4,6 +4,7 @@ import { defineConfig, env } from 'prisma/config';
 
 // Load .env.development for local dev, .env for production/docker
 const envFile = existsSync('.env.development') ? '.env.development' : '.env';
+
 config({ path: envFile });
 
 export default defineConfig({
