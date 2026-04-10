@@ -1,6 +1,5 @@
 import { z } from "zod";
-
-import { userSchema } from "./users";
+import { userSchema } from "./users.js";
 
 export const registerRequestSchema = z.object({
   email: z.email(),

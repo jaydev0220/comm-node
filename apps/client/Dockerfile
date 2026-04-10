@@ -34,6 +34,9 @@ FROM deps AS builder
 # Copy source files
 COPY apps/client ./apps/client
 
+# Ensure public directory exists for runtime COPY step.
+RUN mkdir -p /app/apps/client/public
+
 # Set environment for build
 ENV NEXT_TELEMETRY_DISABLED=1
 
