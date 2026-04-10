@@ -52,6 +52,7 @@ ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
 onlyBuiltDependencies:
+  - '@prisma/engines'
   - argon2
   - esbuild
   - prisma
