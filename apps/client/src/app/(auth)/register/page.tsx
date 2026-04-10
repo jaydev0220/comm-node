@@ -6,9 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Mail, Lock, User, AtSign } from 'lucide-react';
 import { SiGoogle } from '@icons-pack/react-simple-icons';
 import { Button, Input, FormField, Separator } from '@/components/ui';
-import { api } from '@/lib/api';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+import { api, getApiUrl } from '@/lib/api';
 
 interface FormErrors {
 	email?: string;
@@ -25,7 +23,7 @@ export default function RegisterPage() {
 	const [errors, setErrors] = useState<FormErrors>({});
 
 	const handleGoogleRegister = () => {
-		window.location.href = `${API_URL}/auth/google`;
+		window.location.href = getApiUrl('/auth/google');
 	};
 
 	const validateForm = (formData: FormData): FormErrors => {

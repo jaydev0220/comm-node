@@ -1,4 +1,28 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+const DEFAULT_API_ORIGIN = 'http://localhost:3000';
+const API_PATH_PREFIX = '/api';
+
+const normalizedApiOrigin = (process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_ORIGIN).replace(
+	/\/+$/,
+	''
+);
+const apiOrigin = normalizedApiOrigin.endsWith(API_PATH_PREFIX)
+	? normalizedApiOrigin.slice(0, -API_PATH_PREFIX.length)
+	: normalizedApiOrigin;
+
+const normalizeEndpoint = (endpoint: string): string => {
+	const withLeadingSlash = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+	if (
+		withLeadingSlash === API_PATH_PREFIX ||
+		withLeadingSlash.startsWith(`${API_PATH_PREFIX}/`)
+	) {
+		return withLeadingSlash;
+	}
+
+	return `${API_PATH_PREFIX}${withLeadingSlash}`;
+};
+
+export const getApiUrl = (endpoint: string): string => `${apiOrigin}${normalizeEndpoint(endpoint)}`;
 
 interface ApiError {
 	message: string;
@@ -6,14 +30,8 @@ interface ApiError {
 }
 
 export class ApiClient {
-	private baseUrl: string;
-
-	constructor(baseUrl: string = API_URL) {
-		this.baseUrl = baseUrl;
-	}
-
 	private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-		const url = `${this.baseUrl}${endpoint}`;
+		const url = getApiUrl(endpoint);
 
 		const response = await fetch(url, {
 			...options,
