@@ -61,7 +61,7 @@ To enable Google OAuth login:
 3. Navigate to **APIs & Services > Credentials**
 4. Click **Create Credentials > OAuth client ID**
 5. Select **Web application** as application type
-6. Add authorized redirect URI: `http://localhost:3000/auth/google/callback`
+6. Add authorized redirect URI: `http://localhost:3000/api/auth/google/callback`
 7. Copy the Client ID and Client Secret
 
 Add to `apps/server/.env`:
@@ -69,13 +69,13 @@ Add to `apps/server/.env`:
 ```env
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
+GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
 ```
 
 ### OAuth Flow
 
-1. User clicks "Sign in with Google" → redirected to `/auth/google`
-2. After Google consent → callback to `/auth/google/callback`
+1. User clicks "Sign in with Google" → redirected to `/api/auth/google`
+2. After Google consent → callback to `/api/auth/google/callback`
 3. **Returning users** (complete profile): Redirected to frontend with access token
 4. **New users**: Redirected to `/register/google?token=xyz` to complete profile (username, display name)
 
@@ -103,7 +103,7 @@ cp apps/client/.env.example apps/client/.env.local
 Configuration:
 
 ```env
-# Backend API URL
+# Backend server origin (the client automatically appends /api)
 NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
 
