@@ -109,49 +109,14 @@ NEXT_PUBLIC_API_URL=http://localhost:3000
 
 ## Docker
 
-### Development (with hot-reload)
-
 ```bash
-# Start all services (postgres, pgadmin, server, client)
-docker compose -f docker-compose.dev.yml up -d
-
-# View logs
-docker compose -f docker-compose.dev.yml logs -f
-
-# Stop services
-docker compose -f docker-compose.dev.yml down
-```
-
-**Services:**
-
-| Service  | URL                   | Description            |
-| -------- | --------------------- | ---------------------- |
-| Client   | http://localhost:3001 | Next.js frontend       |
-| Server   | http://localhost:3000 | Express API            |
-| pgAdmin  | http://localhost:5050 | Database management    |
-| Postgres | localhost:5432        | PostgreSQL 18.3 Alpine |
-
-**pgAdmin credentials:** `admin@localhost.com` / `admin`
-
-### Production
-
-```bash
-# Create .env file with required variables
-cat > .env << EOF
-POSTGRES_PASSWORD=your-secure-password
-JWT_SECRET=your-jwt-secret-at-least-32-characters
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_CALLBACK_URL=https://your-domain.com/auth/google/callback
-CORS_ORIGIN=https://your-domain.com
-NEXT_PUBLIC_API_URL=https://api.your-domain.com
-EOF
+# Create .env from template
+cp .env.example .env
+# Edit .env with values
 
 # Build and start
 docker compose up -d --build
-
-# Run database migrations
-docker compose exec server npx prisma migrate deploy
+# Prisma client generation + migrations run automatically on server startup
 
 # View logs
 docker compose logs -f
@@ -161,10 +126,12 @@ docker compose logs -f
 
 **Required for production:**
 
-| Variable            | Description                  |
-| ------------------- | ---------------------------- |
-| `POSTGRES_PASSWORD` | PostgreSQL password          |
+| Variable            | Description                     |
+| ------------------- | ------------------------------- |
+| `POSTGRES_PASSWORD` | PostgreSQL password             |
 | `JWT_SECRET`        | JWT signing secret (32+ chars) |
+| `GOOGLE_CLIENT_ID`  | Google OAuth client id          |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret   |
 
 **Optional:**
 
