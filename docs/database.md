@@ -33,7 +33,7 @@ Message ──< Attachment
 
 ## User
 
-Core identity record. `passwordHash` is null for OAuth-only accounts (Google login). `username` is the public handle; `displayName` is the shown name.
+Core identity record. `passwordHash` is null for OAuth-only accounts (Google login). `username` is the public handle; `displayName` is the shown name. Uploaded user avatars are stored as app-served `/uploads/...` paths, while OAuth providers may still populate an external URL.
 
 | Column       | Type     | Constraints        | Notes                        |
 | ------------ | -------- | ------------------ | ---------------------------- |
@@ -41,7 +41,7 @@ Core identity record. `passwordHash` is null for OAuth-only accounts (Google log
 | email        | String   | UNIQUE, NOT NULL   |                              |
 | username     | String   | UNIQUE, NOT NULL   | 3–32 chars, `^[a-z0-9_]+$`   |
 | displayName  | String   | NOT NULL           | 1–64 chars                   |
-| avatarUrl    | String?  | nullable           | URI                          |
+| avatarUrl    | String?  | nullable           | App-served `/uploads/...` path or external URL |
 | passwordHash | String?  | nullable           | null for OAuth-only accounts |
 | createdAt    | DateTime | default now()      |                              |
 | updatedAt    | DateTime | auto-updated       |                              |
@@ -215,13 +215,13 @@ All conversation messages. Soft-deleted via `deletedAt` (row is retained; client
 
 ## Attachment
 
-Files uploaded via `POST /uploads` and linked to a message. The file itself lives in object storage (S3); only metadata is stored here.
+Files uploaded via `POST /uploads` and linked to a message. The file itself lives on local disk under `uploads/`; only metadata and the generated URL are stored here.
 
 | Column    | Type     | Constraints                                    | Notes              |
 | --------- | -------- | ---------------------------------------------- | ------------------ |
 | id        | UUID     | PK, default uuid()                             |                    |
 | messageId | UUID     | FK → [Message.id](http://Message.id) (CASCADE) |                    |
-| url       | String   | NOT NULL                                       | Object storage URI |
+| url       | String   | NOT NULL                                       | Relative `/uploads/...` path |
 | mimeType  | String   | NOT NULL                                       | e.g. `image/png`   |
 | size      | Int      | NOT NULL                                       | Size in bytes      |
 | name      | String   | NOT NULL                                       | Original filename  |

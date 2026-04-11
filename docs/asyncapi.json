@@ -123,7 +123,7 @@
 					},
 					"avatarUrl": {
 						"type": "string",
-						"format": "uri",
+						"description": "Absolute avatar URL or relative /uploads path",
 						"nullable": true
 					}
 				}
@@ -137,7 +137,7 @@
 					},
 					"url": {
 						"type": "string",
-						"format": "uri"
+						"description": "Relative /uploads path returned by the upload endpoint"
 					},
 					"mimeType": {
 						"type": "string",

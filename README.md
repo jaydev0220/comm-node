@@ -77,7 +77,14 @@ GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
 1. User clicks "Sign in with Google" → redirected to `/api/auth/google`
 2. After Google consent → callback to `/api/auth/google/callback`
 3. **Returning users** (complete profile): Redirected to frontend with access token
-4. **New users**: Redirected to `/register/google?token=xyz` to complete profile (username, display name)
+4. **New users**: Redirected to `/register/google?token=xyz`, then forwarded to `/register/setup?flow=google&token=xyz` to complete profile (username, display name, optional avatar upload)
+
+### Email Registration Flow
+
+1. User submits email + password to `/api/auth/register/start`
+2. Backend returns setup token and frontend redirects to `/register/setup?flow=email&token=xyz`
+3. User completes profile (username, display name, optional avatar upload)
+4. Frontend submits setup data to `/api/auth/register/complete`
 
 ## Client Pages
 
@@ -88,8 +95,9 @@ The frontend includes authentication pages with Traditional Chinese interface:
 | Route              | Description                                               |
 | ------------------ | --------------------------------------------------------- |
 | `/login`           | Login page with Google OAuth and email/password           |
-| `/register`        | Registration page with Google OAuth and email form        |
-| `/register/google` | Profile setup after Google OAuth (username, display name) |
+| `/register`        | Registration step 1: email + password only                |
+| `/register/google` | Google OAuth transition page (redirects to shared setup page) |
+| `/register/setup`  | Shared profile setup for email and Google registration (username, display name, optional avatar upload) |
 | `/auth/success`    | OAuth callback handler, stores token and redirects        |
 
 ### Client Environment

@@ -61,7 +61,10 @@
 					"email": { "type": "string", "format": "email" },
 					"username": { "type": "string", "examples": ["jane_doe"] },
 					"displayName": { "type": "string", "examples": ["Jane Doe"] },
-					"avatarUrl": { "type": "string", "format": "uri" },
+					"avatarUrl": {
+						"type": "string",
+						"description": "Absolute avatar URL or relative /uploads path"
+					},
 					"createdAt": { "type": "string", "format": "date-time" },
 					"updatedAt": { "type": "string", "format": "date-time" }
 				}
@@ -151,10 +154,13 @@
 			},
 			"Attachment": {
 				"type": "object",
-				"required": ["id", "url", "mimeType", "size", "displayName"],
+				"required": ["id", "url", "mimeType", "size", "name"],
 				"properties": {
 					"id": { "type": "string", "format": "uuid" },
-					"url": { "type": "string", "format": "uri" },
+					"url": {
+						"type": "string",
+						"description": "Relative /uploads path returned by the upload endpoint"
+					},
 					"mimeType": { "type": "string", "examples": ["image/png"] },
 					"size": { "type": "integer", "description": "Size in bytes" },
 					"name": { "type": "string", "examples": ["screenshot.png"] }
@@ -271,12 +277,12 @@
 		"/auth/register": {
 			"post": {
 				"tags": ["Auth"],
-				"summary": "Register with email and password",
+				"summary": "Register with email and profile data",
 				"security": [],
 				"requestBody": {
 					"required": true,
 					"content": {
-						"application/json": {
+						"multipart/form-data": {
 							"schema": {
 								"type": "object",
 								"required": ["email", "username", "displayName", "password"],
@@ -297,6 +303,11 @@
 										"type": "string",
 										"minLength": 8,
 										"maxLength": 128
+									},
+									"avatar": {
+										"type": "string",
+										"format": "binary",
+										"description": "Optional avatar image upload"
 									}
 								}
 							}
@@ -324,6 +335,133 @@
 							}
 						}
 					},
+					"409": {
+						"description": "Email or username already taken",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Error" }
+							}
+						}
+					},
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
+				}
+			}
+		},
+		"/auth/register/start": {
+			"post": {
+				"tags": ["Auth"],
+				"summary": "Start email registration",
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["email", "password"],
+								"properties": {
+									"email": { "type": "string", "format": "email" },
+									"password": {
+										"type": "string",
+										"minLength": 8,
+										"maxLength": 128
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Email registration setup token issued",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": ["setupToken", "setupUrl"],
+									"properties": {
+										"setupToken": {
+											"type": "string",
+											"description": "Short-lived token for /register/setup"
+										},
+										"setupUrl": {
+											"type": "string",
+											"description": "Frontend redirect URL for the shared setup page"
+										}
+									}
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Email already taken",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Error" }
+							}
+						}
+					},
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
+				}
+			}
+		},
+		"/auth/register/complete": {
+			"post": {
+				"tags": ["Auth"],
+				"summary": "Complete email registration",
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"multipart/form-data": {
+							"schema": {
+								"type": "object",
+								"required": ["token", "username", "displayName"],
+								"properties": {
+									"token": { "type": "string" },
+									"username": {
+										"type": "string",
+										"minLength": 3,
+										"maxLength": 32,
+										"pattern": "^[a-z0-9_]+$"
+									},
+									"displayName": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 64
+									},
+									"avatar": {
+										"type": "string",
+										"format": "binary",
+										"description": "Optional avatar image upload"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Registration complete",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"accessToken": { "type": "string" },
+										"user": { "$ref": "#/components/schemas/User" }
+									}
+								}
+							}
+						},
+						"headers": {
+							"Set-Cookie": {
+								"schema": { "type": "string" },
+								"description": "httpOnly refresh token cookie"
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
 					"409": {
 						"description": "Email or username already taken",
 						"content": {
@@ -432,7 +570,7 @@
 		"/auth/google/callback": {
 			"get": {
 				"tags": ["Auth"],
-				"summary": "Google OAuth callback — issues JWTs on success",
+				"summary": "Google OAuth callback — logs in returning users or starts setup for new users",
 				"security": [],
 				"parameters": [
 					{
@@ -450,7 +588,7 @@
 				],
 				"responses": {
 					"302": {
-						"description": "Redirect to frontend with access token",
+						"description": "Redirect to frontend with an access token or shared setup token",
 						"headers": {
 							"Set-Cookie": {
 								"schema": { "type": "string" },
@@ -459,6 +597,77 @@
 						}
 					},
 					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			}
+		},
+		"/auth/google/complete": {
+			"post": {
+				"tags": ["Auth"],
+				"summary": "Complete Google registration",
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"multipart/form-data": {
+							"schema": {
+								"type": "object",
+								"required": ["token", "username", "displayName"],
+								"properties": {
+									"token": { "type": "string" },
+									"username": {
+										"type": "string",
+										"minLength": 3,
+										"maxLength": 32,
+										"pattern": "^[a-z0-9_]+$"
+									},
+									"displayName": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 64
+									},
+									"avatar": {
+										"type": "string",
+										"format": "binary",
+										"description": "Optional avatar image upload"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": {
+						"description": "Google registration complete",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"accessToken": { "type": "string" },
+										"user": { "$ref": "#/components/schemas/User" }
+									}
+								}
+							}
+						},
+						"headers": {
+							"Set-Cookie": {
+								"schema": { "type": "string" },
+								"description": "httpOnly refresh token cookie"
+							}
+						}
+					},
+					"401": { "$ref": "#/components/responses/Unauthorized" },
+					"403": { "$ref": "#/components/responses/Forbidden" },
+					"404": { "$ref": "#/components/responses/NotFound" },
+					"409": {
+						"description": "Username already taken",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Error" }
+							}
+						}
+					},
+					"422": { "$ref": "#/components/responses/UnprocessableEntity" }
 				}
 			}
 		},
@@ -499,8 +708,7 @@
 										"minLength": 3,
 										"maxLength": 32,
 										"pattern": "^[a-z0-9_]+$"
-									},
-									"avatarUrl": { "type": "string", "format": "uri" }
+									}
 								}
 							}
 						}
@@ -532,6 +740,45 @@
 				"summary": "Delete current user account",
 				"responses": {
 					"204": { "description": "Account deleted" },
+					"401": { "$ref": "#/components/responses/Unauthorized" }
+				}
+			}
+		},
+		"/users/me/avatar": {
+			"post": {
+				"tags": ["Users"],
+				"summary": "Update current user avatar",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"multipart/form-data": {
+							"schema": {
+								"type": "object",
+								"required": ["avatar"],
+								"properties": {
+									"avatar": { "type": "string", "format": "binary" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Updated user avatar",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/User" }
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid avatar upload",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/Error" }
+							}
+						}
+					},
 					"401": { "$ref": "#/components/responses/Unauthorized" }
 				}
 			}
@@ -1118,16 +1365,7 @@
 						"description": "Upload successful",
 						"content": {
 							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"id": { "type": "string", "format": "uuid" },
-										"url": { "type": "string", "format": "uri" },
-										"mimeType": { "type": "string" },
-										"size": { "type": "integer" },
-										"name": { "type": "string" }
-									}
-								}
+								"schema": { "$ref": "#/components/schemas/Attachment" }
 							}
 						}
 					},
