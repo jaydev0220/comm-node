@@ -27,7 +27,7 @@ export const updateChatRequestSchema = z
     name: z.string().min(1).max(100).optional(),
     avatarUrl: z.url().optional(),
   })
-  .refine((data) => data.name !== undefined || data.avatarUrl !== undefined, {
+  .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field is required",
   });
 
