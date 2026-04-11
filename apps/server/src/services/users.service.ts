@@ -23,11 +23,18 @@ export const updateUser = async (id: string, data: UpdateUserRequest): Promise<U
 
 	if (data.username !== undefined) updateData['username'] = data.username;
 	if (data.displayName !== undefined) updateData['displayName'] = data.displayName;
-	if (data.avatarUrl !== undefined) updateData['avatarUrl'] = data.avatarUrl;
 
 	const user = await prisma.user.update({
 		where: { id },
 		data: updateData
+	});
+	return formatUser(user);
+};
+
+export const updateUserAvatar = async (id: string, avatarUrl: string): Promise<User> => {
+	const user = await prisma.user.update({
+		where: { id },
+		data: { avatarUrl }
 	});
 	return formatUser(user);
 };

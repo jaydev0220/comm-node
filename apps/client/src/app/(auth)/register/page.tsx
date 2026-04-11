@@ -3,18 +3,21 @@
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, User, AtSign } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { SiGoogle } from '@icons-pack/react-simple-icons';
 import { Button, Input, FormField, Separator } from '@/components/ui';
 import { api, getApiUrl } from '@/lib/api';
 
 interface FormErrors {
 	email?: string;
-	username?: string;
-	displayName?: string;
 	password?: string;
 	confirmPassword?: string;
 	general?: string;
+}
+
+interface RegisterStartResponse {
+	setupToken: string;
+	setupUrl: string;
 }
 
 export default function RegisterPage() {
@@ -30,8 +33,6 @@ export default function RegisterPage() {
 		const newErrors: FormErrors = {};
 
 		const email = formData.get('email') as string;
-		const username = formData.get('username') as string;
-		const displayName = formData.get('displayName') as string;
 		const password = formData.get('password') as string;
 		const confirmPassword = formData.get('confirmPassword') as string;
 
@@ -39,22 +40,6 @@ export default function RegisterPage() {
 			newErrors.email = '請輸入電子郵件';
 		} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
 			newErrors.email = '請輸入有效的電子郵件';
-		}
-
-		if (!username) {
-			newErrors.username = '請輸入使用者名稱';
-		} else if (username.length < 3) {
-			newErrors.username = '使用者名稱至少需要 3 個字元';
-		} else if (username.length > 32) {
-			newErrors.username = '使用者名稱不能超過 32 個字元';
-		} else if (!/^[a-z0-9_]+$/.test(username)) {
-			newErrors.username = '使用者名稱只能包含小寫字母、數字和底線';
-		}
-
-		if (!displayName) {
-			newErrors.displayName = '請輸入顯示名稱';
-		} else if (displayName.length > 64) {
-			newErrors.displayName = '顯示名稱不能超過 64 個字元';
 		}
 
 		if (!password) {
@@ -88,18 +73,18 @@ export default function RegisterPage() {
 			return;
 		}
 
+		const email = (formData.get('email') as string) ?? '';
+		const password = (formData.get('password') as string) ?? '';
+
 		try {
-			await api.post('/auth/register', {
-				email: formData.get('email'),
-				username: formData.get('username'),
-				displayName: formData.get('displayName'),
-				password: formData.get('password')
-			});
-			router.push('/');
+			const data = await api.post<RegisterStartResponse>('/auth/register/start', { email, password });
+			const fallbackSetupUrl = `/register/setup?flow=email&token=${encodeURIComponent(data.setupToken)}`;
+
+			router.push(data.setupUrl || fallbackSetupUrl);
 		} catch (err) {
 			const error = err as { message?: string; status?: number };
 			if (error.status === 409) {
-				setErrors({ general: '此電子郵件或使用者名稱已被使用' });
+				setErrors({ general: '此電子郵件已被使用' });
 			} else {
 				setErrors({ general: error.message ?? '註冊失敗，請稍後再試' });
 			}
@@ -145,42 +130,6 @@ export default function RegisterPage() {
 				</FormField>
 
 				<FormField
-					label="使用者名稱"
-					htmlFor="username"
-					error={errors.username}
-					description="3-32 個字元，只能使用小寫字母、數字和底線"
-					required
-				>
-					<Input
-						id="username"
-						name="username"
-						type="text"
-						placeholder="your_username"
-						autoComplete="username"
-						error={!!errors.username}
-						icon={<AtSign className="size-4" />}
-					/>
-				</FormField>
-
-				<FormField
-					label="顯示名稱"
-					htmlFor="displayName"
-					error={errors.displayName}
-					description="其他使用者會看到的名稱"
-					required
-				>
-					<Input
-						id="displayName"
-						name="displayName"
-						type="text"
-						placeholder="您的名稱"
-						autoComplete="name"
-						error={!!errors.displayName}
-						icon={<User className="size-4" />}
-					/>
-				</FormField>
-
-				<FormField
 					label="密碼"
 					htmlFor="password"
 					error={errors.password}
@@ -218,7 +167,7 @@ export default function RegisterPage() {
 				</FormField>
 
 				<Button type="submit" size="lg" className="w-full mt-6" loading={loading}>
-					註冊
+					下一步
 				</Button>
 			</form>
 

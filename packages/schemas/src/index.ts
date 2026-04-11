@@ -13,12 +13,16 @@ export {
 
 // Auth schemas
 export {
+	registerStartRequestSchema,
+	registerCompleteRequestSchema,
 	registerRequestSchema,
 	loginRequestSchema,
 	authResponseSchema,
 	refreshResponseSchema,
 	friendRequestActionSchema,
 	googleCompleteRequestSchema,
+	type RegisterStartRequest,
+	type RegisterCompleteRequest,
 	type RegisterRequest,
 	type LoginRequest,
 	type AuthResponse,
@@ -30,9 +34,13 @@ export {
 // User schemas
 export {
 	userSchema,
+	avatarMimeTypeSchema,
+	avatarUploadSchema,
 	updateUserRequestSchema,
 	userSearchParamsSchema,
 	type User,
+	type AvatarMimeType,
+	type AvatarUpload,
 	type UpdateUserRequest,
 	type UserSearchParams,
 } from "./users.js";

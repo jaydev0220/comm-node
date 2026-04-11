@@ -1,11 +1,23 @@
 import { createHash, randomBytes } from 'crypto';
-import type { GoogleCompleteRequest, LoginRequest, RegisterRequest, User } from '@packages/schemas';
+import type {
+	GoogleCompleteRequest,
+	LoginRequest,
+	RegisterCompleteRequest,
+	RegisterRequest,
+	RegisterStartRequest,
+	User
+} from '@packages/schemas';
 import { signAccessToken } from '../lib/jwt.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { prisma } from '../lib/db.js';
 import { errors } from '../middleware/error-handler.js';
 import { getGoogleUserInfo, type GoogleUserInfo } from '../lib/google-oauth.js';
-import { signSetupToken, verifySetupToken } from '../lib/setup-token.js';
+import {
+	signRegisterSetupToken,
+	signSetupToken,
+	verifyRegisterSetupToken,
+	verifySetupToken
+} from '../lib/setup-token.js';
 
 // Hash refresh token for storage
 const hashToken = (token: string): string => createHash('sha256').update(token).digest('hex');
@@ -29,7 +41,8 @@ const formatUser = (user: {
 });
 
 export const registerUser = async (
-	data: RegisterRequest
+	data: RegisterRequest,
+	avatarUrl?: string
 ): Promise<{ user: User; accessToken: string; refreshToken: string }> => {
 	const existing = await prisma.user.findFirst({
 		where: { OR: [{ email: data.email }, { username: data.username }] }
@@ -47,7 +60,8 @@ export const registerUser = async (
 			email: data.email,
 			username: data.username,
 			displayName: data.displayName,
-			passwordHash
+			passwordHash,
+			avatarUrl: avatarUrl ?? null
 		}
 	});
 	const accessToken = await signAccessToken(user.id, user.email);
@@ -61,6 +75,60 @@ export const registerUser = async (
 		}
 	});
 	return { user: formatUser(user), accessToken, refreshToken };
+};
+
+export const startEmailRegistration = async (
+	data: RegisterStartRequest
+): Promise<{ setupToken: string }> => {
+	const existing = await prisma.user.findUnique({
+		where: { email: data.email }
+	});
+
+	if (existing) {
+		throw errors.conflict('Email already taken');
+	}
+
+	const passwordHash = await hashPassword(data.password);
+	const setupToken = await signRegisterSetupToken(data.email, passwordHash);
+	return { setupToken };
+};
+
+export const completeEmailRegistration = async (
+	data: RegisterCompleteRequest,
+	avatarUrl?: string
+): Promise<{ user: User; accessToken: string; refreshToken: string }> => {
+	const payload = await verifyRegisterSetupToken(data.token);
+
+	if (!payload) {
+		throw errors.unauthorized('Invalid or expired setup token');
+	}
+
+	const existingEmail = await prisma.user.findUnique({
+		where: { email: payload.email }
+	});
+
+	if (existingEmail) {
+		throw errors.conflict('Email already taken');
+	}
+
+	const existingUsername = await prisma.user.findUnique({
+		where: { username: data.username }
+	});
+
+	if (existingUsername) {
+		throw errors.conflict('Username already taken');
+	}
+
+	const user = await prisma.user.create({
+		data: {
+			email: payload.email,
+			username: data.username,
+			displayName: data.displayName,
+			passwordHash: payload.passwordHash,
+			avatarUrl: avatarUrl ?? null
+		}
+	});
+	return issueTokensForUser(user);
 };
 
 export const loginUser = async (
@@ -258,7 +326,8 @@ export const handleGoogleCallback = async (code: string): Promise<GoogleCallback
  * Complete Google OAuth registration with profile data.
  */
 export const completeGoogleSetup = async (
-	data: GoogleCompleteRequest
+	data: GoogleCompleteRequest,
+	avatarUrl?: string
 ): Promise<{ user: User; accessToken: string; refreshToken: string }> => {
 	// Verify setup token
 	const payload = await verifySetupToken(data.token);
@@ -304,7 +373,7 @@ export const completeGoogleSetup = async (
 		data: {
 			username: data.username,
 			displayName: data.displayName,
-			avatarUrl: data.avatarUrl ?? oauthAccount.user.avatarUrl
+			avatarUrl: avatarUrl ?? oauthAccount.user.avatarUrl
 		}
 	});
 	return issueTokensForUser(updatedUser);

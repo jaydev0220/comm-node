@@ -4,6 +4,24 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { errors } from '../middleware/error-handler.js';
 
+const DEFAULT_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const AVATAR_FIELD_NAME = 'avatar';
+
+type FileFilter = NonNullable<multer.Options['fileFilter']>;
+
+const GENERIC_ALLOWED_MIME_TYPES = [
+	'image/jpeg',
+	'image/png',
+	'image/gif',
+	'image/webp',
+	'video/mp4',
+	'video/webm',
+	'audio/mpeg',
+	'audio/wav',
+	'application/pdf',
+	'text/plain'
+];
+const AVATAR_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
 // Configure multer storage
 const storage = multer.diskStorage({
 	destination: (_req, _file, cb) => {
@@ -16,35 +34,60 @@ const storage = multer.diskStorage({
 	}
 });
 
-// File filter - allow common types
-const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
-	const allowedTypes = [
-		'image/jpeg',
-		'image/png',
-		'image/gif',
-		'image/webp',
-		'video/mp4',
-		'video/webm',
-		'audio/mpeg',
-		'audio/wav',
-		'application/pdf',
-		'text/plain'
-	];
-
-	if (allowedTypes.includes(file.mimetype)) {
+const createFileFilter = (
+	allowedMimeTypes: readonly string[],
+	errorMessage: string
+): FileFilter => (_req, file, cb) => {
+	if (allowedMimeTypes.includes(file.mimetype)) {
 		cb(null, true);
-	} else {
-		cb(new Error('Invalid file type'));
+		return;
 	}
+
+	cb(errors.badRequest(errorMessage));
 };
 
-export const upload = multer({
-	storage,
-	fileFilter,
-	limits: {
-		fileSize: 10 * 1024 * 1024 // 10MB
-	}
-});
+const createUpload = (
+	allowedMimeTypes: readonly string[],
+	errorMessage = 'Invalid file type'
+): multer.Multer =>
+	multer({
+		storage,
+		fileFilter: createFileFilter(allowedMimeTypes, errorMessage),
+		limits: {
+			fileSize: DEFAULT_MAX_FILE_SIZE_BYTES
+		}
+	});
+
+export const upload = createUpload(GENERIC_ALLOWED_MIME_TYPES);
+
+const avatarUpload = createUpload(
+	AVATAR_ALLOWED_MIME_TYPES,
+	'Invalid avatar file type. Allowed: image/jpeg, image/png, image/gif, image/webp'
+);
+
+export const uploadAvatar: RequestHandler = (req, res, next) => {
+	avatarUpload.single(AVATAR_FIELD_NAME)(req, res, err => {
+		if (!err) {
+			next();
+			return;
+		}
+		if (err instanceof multer.MulterError) {
+			if (err.code === 'LIMIT_FILE_SIZE') {
+				next(errors.badRequest('Avatar file must be 10MB or smaller'));
+				return;
+			}
+			if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+				next(errors.badRequest(`Avatar file field must be "${AVATAR_FIELD_NAME}"`));
+				return;
+			}
+
+			next(errors.badRequest('Invalid avatar upload payload'));
+			return;
+		}
+
+		next(err);
+	});
+};
 
 export const uploadFile: RequestHandler = async (req, res) => {
 	if (!req.file) {

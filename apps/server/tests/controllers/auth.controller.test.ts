@@ -15,6 +15,8 @@ import {
 // Mock the service module before importing controller
 const mockAuthService = {
 	registerUser: mock.fn(),
+	startEmailRegistration: mock.fn(),
+	completeEmailRegistration: mock.fn(),
 	loginUser: mock.fn(),
 	logoutUser: mock.fn(),
 	refreshTokens: mock.fn(),
@@ -37,8 +39,17 @@ mock.module('../../src/lib/google-oauth.js', { namedExports: mockGoogleOAuth });
 mock.module('../../src/lib/env.js', { namedExports: mockEnv });
 
 // Import controller after mocking
-const { register, login, logout, refresh, googleAuth, googleCallback, googleComplete } =
-	await import('../../src/controllers/auth.controller.js');
+const {
+	register,
+	registerStart,
+	registerComplete,
+	login,
+	logout,
+	refresh,
+	googleAuth,
+	googleCallback,
+	googleComplete
+} = await import('../../src/controllers/auth.controller.js');
 
 describe('Auth Controller', () => {
 	let res: MockResponse;
@@ -46,6 +57,8 @@ describe('Auth Controller', () => {
 	beforeEach(() => {
 		res = createMockResponse();
 		mockAuthService.registerUser.mock.resetCalls();
+		mockAuthService.startEmailRegistration.mock.resetCalls();
+		mockAuthService.completeEmailRegistration.mock.resetCalls();
 		mockAuthService.loginUser.mock.resetCalls();
 		mockAuthService.logoutUser.mock.resetCalls();
 		mockAuthService.refreshTokens.mock.resetCalls();
@@ -81,6 +94,43 @@ describe('Auth Controller', () => {
 			});
 			assert.strictEqual(res._cookies.get('refreshToken')?.value, 'refresh-token-456');
 		});
+		it('should pass uploaded avatar URL to auth service', async () => {
+			mockAuthService.registerUser.mock.mockImplementationOnce(() =>
+				Promise.resolve({
+					user: createMockApiUser(),
+					accessToken: 'token',
+					refreshToken: 'refresh'
+				})
+			);
+
+			const body = {
+				email: 'new@example.com',
+				password: 'securepass',
+				username: 'newuser',
+				displayName: 'New User'
+			};
+			const req = createMockRequest({
+				body,
+				file: {
+					fieldname: 'avatar',
+					originalname: 'avatar.png',
+					encoding: '7bit',
+					mimetype: 'image/png',
+					destination: 'uploads/',
+					filename: 'avatar-file.png',
+					path: 'uploads/avatar-file.png',
+					size: 1024,
+					stream: null as never,
+					buffer: Buffer.from('')
+				}
+			});
+
+			await register(req as never, res as never, () => {});
+			assert.deepStrictEqual(mockAuthService.registerUser.mock.calls[0]?.arguments, [
+				body,
+				'/uploads/avatar-file.png'
+			]);
+		});
 		it('should pass request body to auth service', async () => {
 			const body = {
 				email: 'new@example.com',
@@ -101,7 +151,103 @@ describe('Auth Controller', () => {
 
 			await register(req as never, res as never, () => {});
 			assert.strictEqual(mockAuthService.registerUser.mock.calls.length, 1);
-			assert.deepStrictEqual(mockAuthService.registerUser.mock.calls[0]?.arguments[0], body);
+			assert.deepStrictEqual(mockAuthService.registerUser.mock.calls[0]?.arguments, [
+				body,
+				undefined
+			]);
+		});
+	});
+	describe('registerStart', () => {
+		it('should create email setup token and return setup URL', async () => {
+			const body = {
+				email: 'setup@example.com',
+				password: 'password123'
+			};
+
+			mockAuthService.startEmailRegistration.mock.mockImplementationOnce(() =>
+				Promise.resolve({
+					setupToken: 'setup.token+abc'
+				})
+			);
+
+			const req = createMockRequest({ body });
+
+			await registerStart(req as never, res as never, () => {});
+			assert.strictEqual(res._status, 201);
+			assert.deepStrictEqual(res._json, {
+				setupToken: 'setup.token+abc',
+				setupUrl: '/register/setup?flow=email&token=setup.token%2Babc'
+			});
+			assert.deepStrictEqual(mockAuthService.startEmailRegistration.mock.calls[0]?.arguments, [body]);
+		});
+	});
+	describe('registerComplete', () => {
+		it('should complete email registration and set refresh token cookie', async () => {
+			const mockUser = createMockApiUser();
+			const body = {
+				token: 'register-setup-token',
+				username: 'newuser',
+				displayName: 'New User'
+			};
+
+			mockAuthService.completeEmailRegistration.mock.mockImplementationOnce(() =>
+				Promise.resolve({
+					user: mockUser,
+					accessToken: 'access-token-123',
+					refreshToken: 'refresh-token-456'
+				})
+			);
+
+			const req = createMockRequest({ body });
+
+			await registerComplete(req as never, res as never, () => {});
+			assert.strictEqual(res._status, 201);
+			assert.deepStrictEqual(res._json, {
+				accessToken: 'access-token-123',
+				user: mockUser
+			});
+			assert.strictEqual(res._cookies.get('refreshToken')?.value, 'refresh-token-456');
+			assert.deepStrictEqual(mockAuthService.completeEmailRegistration.mock.calls[0]?.arguments, [
+				body,
+				undefined
+			]);
+		});
+		it('should pass uploaded avatar URL to registration completion service', async () => {
+			const body = {
+				token: 'register-setup-token',
+				username: 'newuser',
+				displayName: 'New User'
+			};
+
+			mockAuthService.completeEmailRegistration.mock.mockImplementationOnce(() =>
+				Promise.resolve({
+					user: createMockApiUser(),
+					accessToken: 'access-token-123',
+					refreshToken: 'refresh-token-456'
+				})
+			);
+
+			const req = createMockRequest({
+				body,
+				file: {
+					fieldname: 'avatar',
+					originalname: 'avatar.png',
+					encoding: '7bit',
+					mimetype: 'image/png',
+					destination: 'uploads/',
+					filename: 'avatar-file.png',
+					path: 'uploads/avatar-file.png',
+					size: 1024,
+					stream: null as never,
+					buffer: Buffer.from('')
+				}
+			});
+
+			await registerComplete(req as never, res as never, () => {});
+			assert.deepStrictEqual(mockAuthService.completeEmailRegistration.mock.calls[0]?.arguments, [
+				body,
+				'/uploads/avatar-file.png'
+			]);
 		});
 	});
 	describe('login', () => {
@@ -252,6 +398,11 @@ describe('Auth Controller', () => {
 	describe('googleComplete', () => {
 		it('should complete Google setup and return user', async () => {
 			const mockUser = createMockApiUser();
+			const body = {
+				token: 'setup-token',
+				username: 'googleuser',
+				displayName: 'Google User'
+			};
 
 			mockAuthService.completeGoogleSetup.mock.mockImplementationOnce(() =>
 				Promise.resolve({
@@ -262,11 +413,7 @@ describe('Auth Controller', () => {
 			);
 
 			const req = createMockRequest({
-				body: {
-					setupToken: 'setup-token',
-					username: 'googleuser',
-					displayName: 'Google User'
-				}
+				body
 			});
 
 			await googleComplete(req as never, res as never, () => {});
@@ -276,6 +423,47 @@ describe('Auth Controller', () => {
 				user: mockUser
 			});
 			assert.strictEqual(res._cookies.get('refreshToken')?.value, 'complete-refresh-token');
+			assert.deepStrictEqual(mockAuthService.completeGoogleSetup.mock.calls[0]?.arguments, [
+				body,
+				undefined
+			]);
+		});
+		it('should pass uploaded avatar URL to auth service', async () => {
+			const body = {
+				token: 'setup-token',
+				username: 'googleuser',
+				displayName: 'Google User'
+			};
+
+			mockAuthService.completeGoogleSetup.mock.mockImplementationOnce(() =>
+				Promise.resolve({
+					user: createMockApiUser(),
+					accessToken: 'complete-access-token',
+					refreshToken: 'complete-refresh-token'
+				})
+			);
+
+			const req = createMockRequest({
+				body,
+				file: {
+					fieldname: 'avatar',
+					originalname: 'avatar.png',
+					encoding: '7bit',
+					mimetype: 'image/png',
+					destination: 'uploads/',
+					filename: 'avatar-file.png',
+					path: 'uploads/avatar-file.png',
+					size: 1024,
+					stream: null as never,
+					buffer: Buffer.from('')
+				}
+			});
+
+			await googleComplete(req as never, res as never, () => {});
+			assert.deepStrictEqual(mockAuthService.completeGoogleSetup.mock.calls[0]?.arguments, [
+				body,
+				'/uploads/avatar-file.png'
+			]);
 		});
 	});
 });

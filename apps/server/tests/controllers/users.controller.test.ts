@@ -17,6 +17,7 @@ import {
 const mockUsersService = {
 	findById: mock.fn(),
 	updateUser: mock.fn(),
+	updateUserAvatar: mock.fn(),
 	deleteUser: mock.fn(),
 	searchUsers: mock.fn()
 };
@@ -24,7 +25,7 @@ const mockUsersService = {
 mock.module('../../src/services/users.service.js', { namedExports: mockUsersService });
 
 // Import controller after mocking
-const { getMe, updateMe, deleteMe, searchUsers } =
+const { getMe, updateMe, uploadMeAvatar, deleteMe, searchUsers } =
 	await import('../../src/controllers/users.controller.js');
 
 describe('Users Controller', () => {
@@ -34,6 +35,7 @@ describe('Users Controller', () => {
 		res = createMockResponse();
 		mockUsersService.findById.mock.resetCalls();
 		mockUsersService.updateUser.mock.resetCalls();
+		mockUsersService.updateUserAvatar.mock.resetCalls();
 		mockUsersService.deleteUser.mock.resetCalls();
 		mockUsersService.searchUsers.mock.resetCalls();
 	});
@@ -100,7 +102,7 @@ describe('Users Controller', () => {
 				Promise.resolve(createMockApiUser())
 			);
 
-			const updateData = { displayName: 'New Name', avatarUrl: 'https://example.com/avatar.jpg' };
+			const updateData = { displayName: 'New Name', username: 'new_name' };
 			const req = createMockRequest({
 				user: createMockUser({ sub: 'user-789' }),
 				body: updateData
@@ -122,6 +124,40 @@ describe('Users Controller', () => {
 
 			await updateMe(req as never, res as never, () => {});
 			assert.strictEqual(mockUsersService.updateUser.mock.calls.length, 1);
+		});
+	});
+	describe('uploadMeAvatar', () => {
+		it('should update avatar and return updated user', async () => {
+			const updatedUser = createMockApiUser({ avatarUrl: '/uploads/avatar-123.png' });
+
+			mockUsersService.updateUserAvatar.mock.mockImplementationOnce(() => Promise.resolve(updatedUser));
+
+			const req = createMockRequest({
+				user: createMockUser({ sub: 'user-123' }),
+				file: {
+					filename: 'avatar-123.png'
+				} as Express.Multer.File
+			});
+
+			await uploadMeAvatar(req as never, res as never, () => {});
+			assert.deepStrictEqual(res._json, updatedUser);
+			assert.strictEqual(mockUsersService.updateUserAvatar.mock.calls[0]?.arguments[0], 'user-123');
+			assert.strictEqual(
+				mockUsersService.updateUserAvatar.mock.calls[0]?.arguments[1],
+				'/uploads/avatar-123.png'
+			);
+		});
+		it('should throw bad request when no file is provided', async () => {
+			const req = createMockRequest({
+				user: createMockUser({ sub: 'user-123' })
+			});
+
+			await assert.rejects(
+				async () => {
+					await uploadMeAvatar(req as never, res as never, () => {});
+				},
+				{ message: 'No avatar file provided' }
+			);
 		});
 	});
 	describe('deleteMe', () => {

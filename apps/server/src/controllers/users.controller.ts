@@ -19,6 +19,17 @@ export const updateMe: RequestHandler = async (req, res) => {
 	res.json(user);
 };
 
+export const uploadMeAvatar: RequestHandler = async (req, res) => {
+	if (!req.file) {
+		throw errors.badRequest('No avatar file provided');
+	}
+
+	const avatarUrl = `/uploads/${req.file.filename}`;
+	const user = await usersService.updateUserAvatar(req.user!.sub, avatarUrl);
+
+	res.json(user);
+};
+
 export const deleteMe: RequestHandler = async (req, res) => {
 	await usersService.deleteUser(req.user!.sub);
 	res.status(204).send();

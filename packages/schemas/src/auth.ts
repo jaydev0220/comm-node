@@ -1,6 +1,21 @@
 import { z } from "zod";
 import { userSchema } from "./users.js";
 
+export const registerStartRequestSchema = z.object({
+  email: z.email(),
+  password: z.string().min(8).max(128),
+});
+
+export const registerCompleteRequestSchema = z.object({
+  token: z.string().min(1),
+  username: z
+    .string()
+    .min(3)
+    .max(32)
+    .regex(/^[a-z0-9_]+$/),
+  displayName: z.string().min(1).max(64),
+});
+
 export const registerRequestSchema = z.object({
   email: z.email(),
   username: z
@@ -38,10 +53,11 @@ export const googleCompleteRequestSchema = z.object({
     .max(32)
     .regex(/^[a-z0-9_]+$/),
   displayName: z.string().min(1).max(64),
-  avatarUrl: z.url().optional(),
 });
 
 // Types
+export type RegisterStartRequest = z.infer<typeof registerStartRequestSchema>;
+export type RegisterCompleteRequest = z.infer<typeof registerCompleteRequestSchema>;
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type AuthResponse = z.infer<typeof authResponseSchema>;

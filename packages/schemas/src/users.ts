@@ -10,6 +10,21 @@ export const userSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
+export const avatarMimeTypeSchema = z.enum([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
+export const avatarUploadSchema = z.object({
+  id: z.uuid(),
+  url: z.string().min(1),
+  mimeType: avatarMimeTypeSchema,
+  size: z.number().int().positive(),
+  name: z.string().min(1),
+});
+
 export const updateUserRequestSchema = z
   .object({
     displayName: z.string().min(1).max(64).optional(),
@@ -19,7 +34,6 @@ export const updateUserRequestSchema = z
       .max(32)
       .regex(/^[a-z0-9_]+$/)
       .optional(),
-    avatarUrl: z.url().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field is required",
@@ -33,5 +47,7 @@ export const userSearchParamsSchema = z.object({
 
 // Types
 export type User = z.infer<typeof userSchema>;
+export type AvatarMimeType = z.infer<typeof avatarMimeTypeSchema>;
+export type AvatarUpload = z.infer<typeof avatarUploadSchema>;
 export type UpdateUserRequest = z.infer<typeof updateUserRequestSchema>;
 export type UserSearchParams = z.infer<typeof userSearchParamsSchema>;

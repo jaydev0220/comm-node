@@ -1,4 +1,9 @@
 import type { RequestHandler } from 'express';
+import type {
+	GoogleCompleteRequest,
+	RegisterCompleteRequest,
+	RegisterStartRequest
+} from '@packages/schemas';
 import * as authService from '../services/auth.service.js';
 import { errors } from '../middleware/error-handler.js';
 import { buildAuthorizationUrl } from '../lib/google-oauth.js';
@@ -13,7 +18,26 @@ const COOKIE_OPTIONS = {
 };
 
 export const register: RequestHandler = async (req, res) => {
-	const { user, accessToken, refreshToken } = await authService.registerUser(req.body);
+	const avatarUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+	const { user, accessToken, refreshToken } = await authService.registerUser(req.body, avatarUrl);
+
+	res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, COOKIE_OPTIONS);
+	res.status(201).json({ accessToken, user });
+};
+
+export const registerStart: RequestHandler = async (req, res) => {
+	const { setupToken } = await authService.startEmailRegistration(req.body as RegisterStartRequest);
+	const setupUrl = `/register/setup?flow=email&token=${encodeURIComponent(setupToken)}`;
+
+	res.status(201).json({ setupToken, setupUrl });
+};
+
+export const registerComplete: RequestHandler = async (req, res) => {
+	const avatarUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+	const { user, accessToken, refreshToken } = await authService.completeEmailRegistration(
+		req.body as RegisterCompleteRequest,
+		avatarUrl
+	);
 
 	res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, COOKIE_OPTIONS);
 	res.status(201).json({ accessToken, user });
@@ -84,7 +108,11 @@ export const googleCallback: RequestHandler = async (req, res) => {
 };
 
 export const googleComplete: RequestHandler = async (req, res) => {
-	const { user, accessToken, refreshToken } = await authService.completeGoogleSetup(req.body);
+	const avatarUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+	const { user, accessToken, refreshToken } = await authService.completeGoogleSetup(
+		req.body as GoogleCompleteRequest,
+		avatarUrl
+	);
 
 	res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, COOKIE_OPTIONS);
 	res.status(201).json({ accessToken, user });
