@@ -105,6 +105,7 @@ export default function LoginPage() {
 						id="password"
 						name="password"
 						type="password"
+						showPasswordToggle
 						placeholder="••••••••"
 						autoComplete="current-password"
 						error={!!errors.password}

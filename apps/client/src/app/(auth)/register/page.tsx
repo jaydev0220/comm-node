@@ -191,6 +191,7 @@ export default function RegisterPage() {
 						id="password"
 						name="password"
 						type="password"
+						showPasswordToggle
 						placeholder="••••••••"
 						autoComplete="new-password"
 						error={!!errors.password}
@@ -208,6 +209,7 @@ export default function RegisterPage() {
 						id="confirmPassword"
 						name="confirmPassword"
 						type="password"
+						showPasswordToggle
 						placeholder="••••••••"
 						autoComplete="new-password"
 						error={!!errors.confirmPassword}
