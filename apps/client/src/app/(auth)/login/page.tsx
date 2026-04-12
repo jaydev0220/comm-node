@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 import { Mail, Lock } from 'lucide-react';
 import { SiGoogle } from '@icons-pack/react-simple-icons';
 import { Button, Input, FormField, Separator } from '@/components/ui';
+import { setAccessToken } from '@/lib/auth-session';
 import { api, getApiUrl } from '@/lib/api';
+import type { AuthResponse } from '@/lib/api-types';
 
 interface FormErrors {
 	email?: string;
@@ -50,8 +52,9 @@ export default function LoginPage() {
 		}
 
 		try {
-			await api.post('/auth/login', { email, password });
-			router.push('/');
+			const data = await api.post<AuthResponse>('/auth/login', { email, password });
+			setAccessToken(data.accessToken);
+			router.replace('/');
 		} catch (err) {
 			const error = err as { message?: string; status?: number };
 			if (error.status === 401) {

@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, CheckCircle } from 'lucide-react';
+import { setAccessToken } from '@/lib/auth-session';
 
 function AuthSuccessContent() {
 	const router = useRouter();
@@ -11,9 +12,7 @@ function AuthSuccessContent() {
 
 	useEffect(() => {
 		if (accessToken) {
-			// Store the access token (in a real app, you'd use a proper auth context/store)
-			// For now, we'll just store in sessionStorage and redirect
-			sessionStorage.setItem('accessToken', accessToken);
+			setAccessToken(accessToken);
 
 			// Redirect to home after a brief delay to show success message
 			const timeout = setTimeout(() => {

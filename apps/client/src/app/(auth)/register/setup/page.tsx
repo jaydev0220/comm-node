@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AtSign, User, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import { SiGoogle } from '@icons-pack/react-simple-icons';
 import { Button, Input, FormField } from '@/components/ui';
+import { setAccessToken } from '@/lib/auth-session';
 import { getApiUrl } from '@/lib/api';
+import type { AuthResponse } from '@/lib/api-types';
 
 type SetupFlow = 'email' | 'google';
 
@@ -128,11 +130,11 @@ function ProfileSetupContent() {
 
 		const endpoint = flow === 'google' ? '/auth/google/complete' : '/auth/register/complete';
 
-		try {
-			const response = await fetch(getApiUrl(endpoint), {
-				method: 'POST',
-				body: submitData,
-				credentials: 'include'
+			try {
+				const response = await fetch(getApiUrl(endpoint), {
+					method: 'POST',
+					body: submitData,
+					credentials: 'include'
 			});
 
 			if (!response.ok) {
@@ -153,6 +155,8 @@ function ProfileSetupContent() {
 				throw error;
 			}
 
+			const data = (await response.json()) as AuthResponse;
+			setAccessToken(data.accessToken);
 			setCountdown(5);
 			setIsCompleted(true);
 		} catch (err) {

@@ -1,3 +1,5 @@
+import { clearAccessToken, readAccessToken } from './auth-session';
+
 const DEFAULT_API_ORIGIN = 'http://localhost:3000';
 const API_PATH_PREFIX = '/api';
 
@@ -24,6 +26,20 @@ const normalizeEndpoint = (endpoint: string): string => {
 
 export const getApiUrl = (endpoint: string): string => `${apiOrigin}${normalizeEndpoint(endpoint)}`;
 
+export const getAssetUrl = (assetPath: string | null | undefined): string | undefined => {
+	if (!assetPath) {
+		return undefined;
+	}
+
+	if (/^https?:\/\//i.test(assetPath)) {
+		return assetPath;
+	}
+
+	const normalizedAssetPath = assetPath.startsWith('/') ? assetPath : `/${assetPath}`;
+
+	return `${apiOrigin}${normalizedAssetPath}`;
+};
+
 interface ApiError {
 	message: string;
 	status: number;
@@ -32,15 +48,22 @@ interface ApiError {
 export class ApiClient {
 	private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
 		const url = getApiUrl(endpoint);
+		const headers = new Headers(options.headers);
+		const accessToken = readAccessToken();
+
+		headers.set('Content-Type', 'application/json');
+
+		if (accessToken && !headers.has('Authorization')) {
+			headers.set('Authorization', `Bearer ${accessToken}`);
+		}
 
 		const response = await fetch(url, {
 			...options,
-			headers: {
-				'Content-Type': 'application/json',
-				...options.headers
-			},
+			headers,
 			credentials: 'include'
 		});
+
+		const responseText = await response.text();
 
 		if (!response.ok) {
 			const error: ApiError = {
@@ -48,19 +71,34 @@ export class ApiClient {
 				status: response.status
 			};
 
-			try {
-				const data = await response.json();
-				if (data.message) {
-					error.message = data.message;
+			if (response.status === 401) {
+				clearAccessToken();
+			}
+
+			if (responseText) {
+				try {
+					const data = JSON.parse(responseText) as Partial<{ message?: string }>;
+
+					if (typeof data.message === 'string' && data.message.length > 0) {
+						error.message = data.message;
+					}
+				} catch {
+					// Use default error message.
 				}
-			} catch {
-				// Use default error message
 			}
 
 			throw error;
 		}
 
-		return response.json();
+		if (response.status === 204 || !responseText) {
+			return undefined as T;
+		}
+
+		try {
+			return JSON.parse(responseText) as T;
+		} catch {
+			return responseText as T;
+		}
 	}
 
 	async post<T>(endpoint: string, data: unknown): Promise<T> {
@@ -73,6 +111,12 @@ export class ApiClient {
 	async get<T>(endpoint: string): Promise<T> {
 		return this.request<T>(endpoint, {
 			method: 'GET'
+		});
+	}
+
+	async delete<T>(endpoint: string): Promise<T> {
+		return this.request<T>(endpoint, {
+			method: 'DELETE'
 		});
 	}
 }
