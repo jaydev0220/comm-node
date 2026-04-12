@@ -1,10 +1,12 @@
 import type { RequestHandler } from 'express';
+import type { FriendsListResponse } from '@packages/schemas';
 import * as friendsService from '../services/friends.service.js';
 
 export const listFriends: RequestHandler = async (req, res) => {
 	const friends = await friendsService.listFriends(req.user!.sub);
+	const response: FriendsListResponse = { data: friends };
 
-	res.json({ data: friends });
+	res.json(response);
 };
 
 export const listRequests: RequestHandler = async (req, res) => {

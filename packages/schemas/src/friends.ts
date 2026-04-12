@@ -3,13 +3,21 @@ import { userSchema } from "./users.js";
 
 export const friendshipStatusSchema = z.enum(["PENDING", "ACCEPTED", "BLOCKED"]);
 
+export const friendWithPresenceSchema = userSchema.extend({
+  isOnline: z.boolean(),
+});
+
+export const friendsListResponseSchema = z.object({
+  data: z.array(friendWithPresenceSchema),
+});
+
 export const friendshipSchema = z.object({
   id: z.uuid(),
   status: friendshipStatusSchema,
   requester: userSchema,
   addressee: userSchema,
-  createdAt: z.iso,
-  updatedAt: z.iso,
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
 });
 
 export const sendFriendRequestSchema = z.object({
@@ -25,6 +33,8 @@ export const blockUserRequestSchema = z.object({
 });
 
 // Types
+export type FriendWithPresence = z.infer<typeof friendWithPresenceSchema>;
+export type FriendsListResponse = z.infer<typeof friendsListResponseSchema>;
 export type FriendshipStatus = z.infer<typeof friendshipStatusSchema>;
 export type Friendship = z.infer<typeof friendshipSchema>;
 export type SendFriendRequest = z.infer<typeof sendFriendRequestSchema>;

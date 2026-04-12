@@ -41,9 +41,10 @@ const createMockFriend = (overrides = {}) => ({
 	email: 'friend@example.com',
 	username: 'frienduser',
 	displayName: 'Friend User',
-	avatarUrl: null,
+	avatarUrl: undefined,
 	createdAt: '2024-01-01T00:00:00.000Z',
 	updatedAt: '2024-01-01T00:00:00.000Z',
+	isOnline: false,
 	...overrides
 });
 const createMockFriendRequest = (overrides = {}) => ({
@@ -77,7 +78,10 @@ describe('Friends Controller', () => {
 	});
 	describe('listFriends', () => {
 		it('should return list of friends wrapped in data object', async () => {
-			const friends = [createMockFriend({ id: 'friend-1' }), createMockFriend({ id: 'friend-2' })];
+			const friends = [
+				createMockFriend({ id: 'friend-1', isOnline: true }),
+				createMockFriend({ id: 'friend-2', isOnline: false })
+			];
 
 			mockFriendsService.listFriends.mock.mockImplementationOnce(() => Promise.resolve(friends));
 

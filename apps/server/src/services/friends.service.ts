@@ -1,8 +1,9 @@
 import { prisma } from '../lib/db.js';
 import { errors } from '../middleware/error-handler.js';
-import type { User, Friendship } from '@packages/schemas';
+import { getConnectedUserIds } from '../ws/connection.js';
+import type { FriendWithPresence, User, Friendship } from '@packages/schemas';
 
-export const listFriends = async (userId: string): Promise<User[]> => {
+export const listFriends = async (userId: string): Promise<FriendWithPresence[]> => {
 	const friendships = await prisma.friendship.findMany({
 		where: {
 			status: 'ACCEPTED',
@@ -13,9 +14,13 @@ export const listFriends = async (userId: string): Promise<User[]> => {
 			addressee: true
 		}
 	});
+	const connectedUserIds = new Set(getConnectedUserIds());
 	return friendships.map((f) => {
 		const friend = f.requesterId === userId ? f.addressee : f.requester;
-		return formatUser(friend);
+		return {
+			...formatUser(friend),
+			isOnline: connectedUserIds.has(friend.id)
+		};
 	});
 };
 

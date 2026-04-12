@@ -48,10 +48,14 @@ export {
 // Friendship schemas
 export {
 	friendshipStatusSchema,
+	friendWithPresenceSchema,
+	friendsListResponseSchema,
 	friendshipSchema,
 	sendFriendRequestSchema,
 	respondFriendRequestSchema,
 	blockUserRequestSchema,
+	type FriendWithPresence,
+	type FriendsListResponse,
 	type FriendshipStatus,
 	type Friendship,
 	type SendFriendRequest,
