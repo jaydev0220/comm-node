@@ -14,10 +14,7 @@ const apiOrigin = normalizedApiOrigin.endsWith(API_PATH_PREFIX)
 const normalizeEndpoint = (endpoint: string): string => {
 	const withLeadingSlash = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
-	if (
-		withLeadingSlash === API_PATH_PREFIX ||
-		withLeadingSlash.startsWith(`${API_PATH_PREFIX}/`)
-	) {
+	if (withLeadingSlash === API_PATH_PREFIX || withLeadingSlash.startsWith(`${API_PATH_PREFIX}/`)) {
 		return withLeadingSlash;
 	}
 

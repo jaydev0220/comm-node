@@ -47,7 +47,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 				{canTogglePassword && (
 					<button
 						type="button"
-						className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-r-lg text-text-muted hover:text-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:[transition-property:color,transform] motion-safe:duration-200 motion-safe:hover:scale-105"
+						className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-r-lg
+											text-text-muted hover:text-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action/50
+											focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:[transition-property:color,transform]
+											motion-safe:duration-200 motion-safe:hover:scale-105"
 						aria-label={isPasswordVisible ? '隱藏密碼' : '顯示密碼'}
 						aria-pressed={isPasswordVisible}
 						onClick={() => setIsPasswordVisible((visible) => !visible)}

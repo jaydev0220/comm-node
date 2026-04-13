@@ -24,9 +24,9 @@ describe('validate middleware', () => {
 		const req = createGetterQueryRequest({});
 		const next = createMockNext();
 
-	await validateQuery(listChatsParamsSchema)(req as never, {} as never, next);
-	assert.deepStrictEqual(req.query, { limit: 50 });
-	assert.deepStrictEqual(next.mock.calls, [[]]);
+		await validateQuery(listChatsParamsSchema)(req as never, {} as never, next);
+		assert.deepStrictEqual(req.query, { limit: 50 });
+		assert.deepStrictEqual(next.mock.calls, [[]]);
 	});
 	it('should coerce search query params and apply defaults', async () => {
 		const req = createGetterQueryRequest({ q: 'alice', page: '2' });

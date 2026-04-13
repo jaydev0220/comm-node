@@ -178,7 +178,9 @@ describe('Auth Controller', () => {
 				setupToken: 'setup.token+abc',
 				setupUrl: '/register/setup?flow=email&token=setup.token%2Babc'
 			});
-			assert.deepStrictEqual(mockAuthService.startEmailRegistration.mock.calls[0]?.arguments, [body]);
+			assert.deepStrictEqual(mockAuthService.startEmailRegistration.mock.calls[0]?.arguments, [
+				body
+			]);
 		});
 	});
 	describe('registerComplete', () => {

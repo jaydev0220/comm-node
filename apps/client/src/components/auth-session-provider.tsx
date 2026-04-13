@@ -11,7 +11,12 @@ import {
 	type ReactNode
 } from 'react';
 import { api } from '@/lib/api';
-import { clearAccessToken, readAccessToken, subscribeAuthSession, writeAccessToken } from '@/lib/auth-session';
+import {
+	clearAccessToken,
+	readAccessToken,
+	subscribeAuthSession,
+	writeAccessToken
+} from '@/lib/auth-session';
 import type { User } from '@/lib/api-types';
 
 type AuthStatus = 'loading' | 'anonymous' | 'authenticated';

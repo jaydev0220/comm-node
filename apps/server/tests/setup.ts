@@ -266,7 +266,9 @@ export const assertThrowsAppError = async (
 		const appError = error as { status?: number; code?: string; message?: string };
 
 		if (appError.status !== expectedStatus) {
-			throw new Error(`Expected status ${expectedStatus}, got ${appError.status}`, { cause: error });
+			throw new Error(`Expected status ${expectedStatus}, got ${appError.status}`, {
+				cause: error
+			});
 		}
 		if (appError.code !== expectedCode) {
 			throw new Error(`Expected code ${expectedCode}, got ${appError.code}`, { cause: error });

@@ -130,7 +130,9 @@ describe('Users Controller', () => {
 		it('should update avatar and return updated user', async () => {
 			const updatedUser = createMockApiUser({ avatarUrl: '/uploads/avatar-123.png' });
 
-			mockUsersService.updateUserAvatar.mock.mockImplementationOnce(() => Promise.resolve(updatedUser));
+			mockUsersService.updateUserAvatar.mock.mockImplementationOnce(() =>
+				Promise.resolve(updatedUser)
+			);
 
 			const req = createMockRequest({
 				user: createMockUser({ sub: 'user-123' }),

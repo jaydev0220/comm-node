@@ -77,7 +77,10 @@ export default function RegisterPage() {
 		const password = (formData.get('password') as string) ?? '';
 
 		try {
-			const data = await api.post<RegisterStartResponse>('/auth/register/start', { email, password });
+			const data = await api.post<RegisterStartResponse>('/auth/register/start', {
+				email,
+				password
+			});
 			const fallbackSetupUrl = `/register/setup?flow=email&token=${encodeURIComponent(data.setupToken)}`;
 
 			router.push(data.setupUrl || fallbackSetupUrl);

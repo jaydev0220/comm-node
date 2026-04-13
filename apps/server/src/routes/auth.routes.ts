@@ -13,8 +13,17 @@ import { validateBody } from '../middleware/validate.js';
 
 const router = Router();
 
-router.post('/register', uploadAvatar, validateBody(registerRequestSchema), authController.register);
-router.post('/register/start', validateBody(registerStartRequestSchema), authController.registerStart);
+router.post(
+	'/register',
+	uploadAvatar,
+	validateBody(registerRequestSchema),
+	authController.register
+);
+router.post(
+	'/register/start',
+	validateBody(registerStartRequestSchema),
+	authController.registerStart
+);
 router.post(
 	'/register/complete',
 	uploadAvatar,

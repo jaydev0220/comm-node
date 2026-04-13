@@ -34,17 +34,16 @@ const storage = multer.diskStorage({
 	}
 });
 
-const createFileFilter = (
-	allowedMimeTypes: readonly string[],
-	errorMessage: string
-): FileFilter => (_req, file, cb) => {
-	if (allowedMimeTypes.includes(file.mimetype)) {
-		cb(null, true);
-		return;
-	}
+const createFileFilter =
+	(allowedMimeTypes: readonly string[], errorMessage: string): FileFilter =>
+	(_req, file, cb) => {
+		if (allowedMimeTypes.includes(file.mimetype)) {
+			cb(null, true);
+			return;
+		}
 
-	cb(errors.badRequest(errorMessage));
-};
+		cb(errors.badRequest(errorMessage));
+	};
 
 const createUpload = (
 	allowedMimeTypes: readonly string[],
@@ -66,7 +65,7 @@ const avatarUpload = createUpload(
 );
 
 export const uploadAvatar: RequestHandler = (req, res, next) => {
-	avatarUpload.single(AVATAR_FIELD_NAME)(req, res, err => {
+	avatarUpload.single(AVATAR_FIELD_NAME)(req, res, (err) => {
 		if (!err) {
 			next();
 			return;

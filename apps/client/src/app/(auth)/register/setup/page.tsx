@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Suspense, useEffect, useMemo, useState, type SubmitEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AtSign, User, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import { SiGoogle } from '@icons-pack/react-simple-icons';
@@ -98,7 +98,7 @@ function ProfileSetupContent() {
 		return newErrors;
 	};
 
-	const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setErrors({});
 		setLoading(true);
@@ -130,11 +130,11 @@ function ProfileSetupContent() {
 
 		const endpoint = flow === 'google' ? '/auth/google/complete' : '/auth/register/complete';
 
-			try {
-				const response = await fetch(getApiUrl(endpoint), {
-					method: 'POST',
-					body: submitData,
-					credentials: 'include'
+		try {
+			const response = await fetch(getApiUrl(endpoint), {
+				method: 'POST',
+				body: submitData,
+				credentials: 'include'
 			});
 
 			if (!response.ok) {
