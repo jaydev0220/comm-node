@@ -14,6 +14,19 @@ const formatZodError = (error: ZodError): ErrorDetail[] => {
 	}));
 };
 
+const setValidatedRequestValue = <T extends object, K extends 'body' | 'query' | 'params'>(
+	req: T,
+	key: K,
+	value: unknown
+): void => {
+	Object.defineProperty(req, key, {
+		value,
+		configurable: true,
+		enumerable: true,
+		writable: true
+	});
+};
+
 interface ValidateOptions {
 	body?: ZodSchema;
 	query?: ZodSchema;
@@ -36,7 +49,7 @@ export const validate = (options: ValidateOptions): RequestHandler => {
 			if (!result.success) {
 				allDetails.push(...formatZodError(result.error));
 			} else {
-				req.body = result.data;
+				setValidatedRequestValue(req, 'body', result.data);
 			}
 		}
 		if (options.query) {
@@ -45,8 +58,7 @@ export const validate = (options: ValidateOptions): RequestHandler => {
 			if (!result.success) {
 				allDetails.push(...formatZodError(result.error));
 			} else {
-				// Cast to satisfy Express types
-				req.query = result.data as typeof req.query;
+				setValidatedRequestValue(req, 'query', result.data);
 			}
 		}
 		if (options.params) {
@@ -55,8 +67,7 @@ export const validate = (options: ValidateOptions): RequestHandler => {
 			if (!result.success) {
 				allDetails.push(...formatZodError(result.error));
 			} else {
-				// Cast to satisfy Express types
-				req.params = result.data as typeof req.params;
+				setValidatedRequestValue(req, 'params', result.data);
 			}
 		}
 		if (allDetails.length > 0) {
