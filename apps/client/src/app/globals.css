@@ -98,3 +98,12 @@
 	--color-destructive: var(--cn-destructive);
 	--color-destructive-subtle: var(--cn-destructive-subtle);
 }
+
+.invisible-scroll-y {
+	overflow-y: scroll;
+	scrollbar-width: none;
+}
+
+.invisible-scroll-y::-webkit-scrollbar {
+	display: none;
+}
