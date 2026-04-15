@@ -29,11 +29,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 					ref={ref}
 					type={inputType}
 					className={`
-						w-full h-10 px-3 ${icon ? 'pl-10' : ''} ${canTogglePassword ? 'pr-12' : ''} text-sm
-						bg-surface border rounded-lg
-						text-text-primary placeholder:text-text-muted
-						transition-colors
-						focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background
+						w-full h-10 px-3 ${icon ? 'pl-10' : ''} ${canTogglePassword ? 'pr-12' : ''} text-sm bg-surface border rounded-lg text-text-primary
+						placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background
 						disabled:opacity-50 disabled:cursor-not-allowed
 						${
 							error
