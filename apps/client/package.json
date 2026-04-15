@@ -29,6 +29,5 @@
 		"prettier-plugin-tailwindcss": "catalog:client",
 		"tailwindcss": "catalog:client",
 		"typescript": "catalog:"
-	},
-	"prettier": "@packages/prettier-config"
+	}
 }
