@@ -2,10 +2,11 @@
 
 PostgreSQL database managed via **Prisma ORM**. All IDs are UUIDs. All timestamps are UTC ISO 8601.
 
-The schema is organized into 4 domains:
+The schema is organized into 5 domains:
 
 - **Identity** — Users, OAuth accounts, refresh tokens
 - **Social** — Friendships (friends + blocks)
+- **Notifications** — In-app unread notifications
 - **Conversations** — Conversations, participants, roles
 - **Messaging** — Messages, attachments
 
@@ -20,6 +21,7 @@ User ──< Friendship (as requester)
 User ──< Friendship (as addressee)
 User ──< ConversationParticipant
 User ──< Message (as sender)
+User ──< Notification
 
 Conversation ──< ConversationParticipant
 Conversation ──< Message
@@ -111,6 +113,32 @@ Models all peer relationships: friend requests, accepted friends, and blocks. A 
 - Query both directions `(A→B OR B→A)` to check if a relationship exists.
 - A BLOCKED record suppresses friend requests from the blocked user.
 - Rejecting a request deletes the row entirely (no REJECTED status).
+
+---
+
+# Domain: Notifications
+
+## Notification
+
+Per-user notification feed rows used for unread lists and badge counts.
+
+| Column      | Type             | Constraints                              | Notes                                                              |
+| ----------- | ---------------- | ---------------------------------------- | ------------------------------------------------------------------ |
+| id          | UUID             | PK, default uuid()                       |                                                                    |
+| userId      | UUID             | FK → [User.id](http://User.id) (CASCADE) | Notification recipient                                              |
+| type        | NotificationType | NOT NULL                                 | Enum: `NEW_MESSAGE`, `FRIEND_REQUEST`                              |
+| referenceId | UUID (String)    | NOT NULL                                 | `messageId` for `NEW_MESSAGE`; `friendshipId` for `FRIEND_REQUEST` |
+| read        | Boolean          | NOT NULL, default false                  |                                                                    |
+| createdAt   | DateTime         | default now()                            |                                                                    |
+
+**Indexes:** `(userId, read, createdAt DESC)` for unread list; `(userId, read, type)` for split unread counts
+
+### Enum: NotificationType
+
+| Value          | Description                                         |
+| -------------- | --------------------------------------------------- |
+| NEW_MESSAGE    | Unread message notification                         |
+| FRIEND_REQUEST | Pending friend request notification                 |
 
 ---
 
@@ -235,6 +263,7 @@ Files uploaded via `POST /uploads` and linked to a message. The file itself live
 | ---------------- | -------------------------- |
 | OAuthProvider    | GOOGLE                     |
 | FriendshipStatus | PENDING, ACCEPTED, BLOCKED |
+| NotificationType | NEW_MESSAGE, FRIEND_REQUEST |
 | ConversationType | DIRECT, GROUP              |
 | ParticipantRole  | OWNER, ADMIN, MEMBER       |
 | MessageType      | TEXT, FILE, SYSTEM         |
@@ -282,6 +311,11 @@ enum MessageType {
   SYSTEM
 }
 
+enum NotificationType {
+  NEW_MESSAGE
+  FRIEND_REQUEST
+}
+
 // ─── Identity ────────────────────────────────────────────
 
 model User {
@@ -300,6 +334,7 @@ model User {
   receivedFriendships Friendship[]              @relation("Addressee")
   participations      ConversationParticipant[]
   messages            Message[]
+  notifications       Notification[]
 }
 
 model OAuthAccount {
@@ -334,6 +369,21 @@ model Friendship {
   addressee   User             @relation("Addressee", fields: [addresseeId], references: [id])
 
   @@unique([requesterId, addresseeId])
+}
+
+// ─── Notifications ───────────────────────────────────────
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String
+  type        NotificationType
+  referenceId String
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt(sort: Desc)])
+  @@index([userId, read, type])
 }
 
 // ─── Conversations ───────────────────────────────────────
