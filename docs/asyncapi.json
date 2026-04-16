@@ -57,7 +57,7 @@
 				"$ref": "#/channels/~1ws"
 			},
 			"summary": "Events sent from the client to the server",
-			"description": "All message mutations and typing indicators are sent through this channel.",
+			"description": "All message mutations are sent through this channel.",
 			"messages": [
 				{
 					"$ref": "#/channels/~1ws/messages/clientToServer.message.0"
@@ -604,6 +604,122 @@
 								"requestId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 								"code": "VALIDATION_FAILED",
 								"message": "Message must have content or attachments"
+							}
+						}
+					}
+				]
+			},
+			"NotificationCleared": {
+				"name": "notification:cleared",
+				"title": "Notifications cleared",
+				"summary": "Server confirms that specific notifications have been marked as read. Enables multi-tab sync: if the user reads notifications in one tab, other open tabs are updated.",
+				"payload": {
+					"type": "object",
+					"required": ["event", "payload"],
+					"properties": {
+						"event": {
+							"type": "string",
+							"const": "notification:cleared"
+						},
+						"payload": {
+							"type": "object",
+							"required": ["ids"],
+							"properties": {
+								"ids": {
+									"type": "array",
+									"items": {
+										"type": "string",
+										"format": "uuid"
+									},
+									"description": "IDs of notifications that were marked as read. Empty array signals a read-all operation."
+								}
+							}
+						}
+					}
+				},
+				"examples": [
+					{
+						"name": "Specific notifications cleared",
+						"payload": {
+							"event": "notification:cleared",
+							"payload": {
+								"ids": [
+									"n1b2c3d4-e5f6-7890-abcd-ef1234567890",
+									"n2c3d4e5-f6a7-8901-bcde-f12345678901"
+								]
+							}
+						}
+					},
+					{
+						"name": "Read-all operation",
+						"payload": {
+							"event": "notification:cleared",
+							"payload": {
+								"ids": []
+							}
+						}
+					}
+				]
+			},
+			"NotificationNew": {
+				"name": "notification:new",
+				"title": "New notification",
+				"summary": "Server pushes a new notification to the client. Fired for messages in conversations the user is not currently viewing, and for incoming friend requests.",
+				"payload": {
+					"type": "object",
+					"required": ["event", "payload"],
+					"properties": {
+						"event": {
+							"type": "string",
+							"const": "notification:new"
+						},
+						"payload": {
+							"type": "object",
+							"required": ["id", "type", "referenceId", "createdAt"],
+							"properties": {
+								"id": {
+									"type": "string",
+									"format": "uuid"
+								},
+								"type": {
+									"type": "string",
+									"enum": ["NEW_MESSAGE", "FRIEND_REQUEST"]
+								},
+								"referenceId": {
+									"type": "string",
+									"format": "uuid",
+									"description": "messageId for NEW_MESSAGE; friendshipId for FRIEND_REQUEST"
+								},
+								"createdAt": {
+									"type": "string",
+									"format": "date-time"
+								}
+							}
+						}
+					}
+				},
+				"examples": [
+					{
+						"name": "New message notification",
+						"payload": {
+							"event": "notification:new",
+							"payload": {
+								"id": "n1b2c3d4-e5f6-7890-abcd-ef1234567890",
+								"type": "NEW_MESSAGE",
+								"referenceId": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+								"createdAt": "2026-04-16T10:00:00Z"
+							}
+						}
+					},
+					{
+						"name": "Friend request notification",
+						"payload": {
+							"event": "notification:new",
+							"payload": {
+								"id": "n2c3d4e5-f6a7-8901-bcde-f12345678901",
+								"type": "FRIEND_REQUEST",
+								"referenceId": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+								"createdAt": "2026-04-16T10:05:00Z"
 							}
 						}
 					}
