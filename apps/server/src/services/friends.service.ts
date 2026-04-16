@@ -1,6 +1,7 @@
 import { prisma } from '../lib/db.js';
 import { errors } from '../middleware/error-handler.js';
 import { getConnectedUserIds } from '../ws/connection.js';
+import { createNotification } from './notifications.service.js';
 import type { FriendWithPresence, User, Friendship } from '@packages/schemas';
 
 export const listFriends = async (userId: string): Promise<FriendWithPresence[]> => {
@@ -68,6 +69,8 @@ export const sendFriendRequest = async (
 		data: { requesterId, addresseeId, status: 'PENDING' },
 		include: { requester: true, addressee: true }
 	});
+
+	await createNotification(addresseeId, 'FRIEND_REQUEST', friendship.id);
 	return formatFriendship(friendship);
 };
 

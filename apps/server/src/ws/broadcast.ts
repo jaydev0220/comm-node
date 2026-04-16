@@ -1,4 +1,9 @@
-import type { WsServerMessage, WsMessage } from '@packages/schemas';
+import type {
+	NotificationClearedPayload,
+	NotificationNewPayload,
+	WsServerMessage,
+	WsMessage
+} from '@packages/schemas';
 import { prisma } from '../lib/db.js';
 import { getSocketsForUser, type AuthenticatedSocket } from './connection.js';
 
@@ -54,6 +59,25 @@ export const formatMessageForWs = (m: PrismaMessage): WsMessage => ({
 	createdAt: m.createdAt.toISOString()
 });
 
+type NotificationBroadcastInput = {
+	id: string;
+	type: NotificationNewPayload['type'];
+	referenceId: string;
+	createdAt: string | Date;
+};
+
+export const formatNotificationForWs = (
+	notification: NotificationBroadcastInput
+): NotificationNewPayload => ({
+	id: notification.id,
+	type: notification.type,
+	referenceId: notification.referenceId,
+	createdAt:
+		typeof notification.createdAt === 'string'
+			? notification.createdAt
+			: notification.createdAt.toISOString()
+});
+
 // ============================================================================
 // Send to Single Socket
 // ============================================================================
@@ -101,6 +125,23 @@ export const sendError = (
 	});
 };
 
+/**
+ * Broadcast a server message to all connected sockets for a user.
+ */
+export const broadcastToUser = (
+	userId: string,
+	message: WsServerMessage,
+	excludeSocket?: AuthenticatedSocket
+): void => {
+	const sockets = getSocketsForUser(userId);
+
+	for (const socket of sockets) {
+		if (socket !== excludeSocket) {
+			sendToSocket(socket, message);
+		}
+	}
+};
+
 // ============================================================================
 // Broadcast to Conversation
 // ============================================================================
@@ -128,14 +169,34 @@ export const broadcastToConversation = async (
 	const participantIds = await getConversationParticipantIds(conversationId);
 
 	for (const userId of participantIds) {
-		const sockets = getSocketsForUser(userId);
-
-		for (const socket of sockets) {
-			if (socket !== excludeSocket) {
-				sendToSocket(socket, message);
-			}
-		}
+		broadcastToUser(userId, message, excludeSocket);
 	}
+};
+
+/**
+ * Broadcast a new notification to all connected sockets for a user.
+ */
+export const broadcastNotificationNew = (
+	userId: string,
+	notification: NotificationBroadcastInput
+): void => {
+	broadcastToUser(userId, {
+		event: 'notification:new',
+		payload: formatNotificationForWs(notification)
+	});
+};
+
+/**
+ * Broadcast notification clear sync to all connected sockets for a user.
+ */
+export const broadcastNotificationCleared = (
+	userId: string,
+	ids: NotificationClearedPayload['ids']
+): void => {
+	broadcastToUser(userId, {
+		event: 'notification:cleared',
+		payload: { ids: [...ids] }
+	});
 };
 
 /**

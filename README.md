@@ -1,6 +1,6 @@
 # CommNode
 
-A real-time communication platform with WebSocket messaging, friend management, and OAuth authentication.
+A real-time communication platform with WebSocket messaging, friend management, OAuth authentication, and real-time notification pushes for friend requests and new messages.
 
 ## Tech Stack
 

@@ -7,6 +7,7 @@ import participantsRoutes from './participants.routes.js';
 import messagesRoutes from './messages.routes.js';
 import uploadsRoutes from './uploads.routes.js';
 import searchRoutes from './search.routes.js';
+import notificationsRoutes from './notifications.routes.js';
 
 const router = Router();
 
@@ -24,5 +25,7 @@ router.use('/chats/:id/messages', messagesRoutes);
 router.use('/uploads', uploadsRoutes);
 // Search
 router.use('/search', searchRoutes);
+// Notifications
+router.use('/notifications', notificationsRoutes);
 
 export default router;

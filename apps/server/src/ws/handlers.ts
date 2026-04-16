@@ -3,6 +3,7 @@ import { prisma } from '../lib/db.js';
 import { registerHandler, type WsMessageHandler } from './index.js';
 import type { AuthenticatedSocket } from './connection.js';
 import { sendError, sendAck, formatMessageForWs, broadcastToConversation } from './broadcast.js';
+import { createNotification } from '../services/notifications.service.js';
 
 // ============================================================================
 // Permission Helpers
@@ -93,6 +94,20 @@ const handleMessageSend: WsMessageHandler = async (
 			where: { id: conversationId },
 			data: { updatedAt: new Date() }
 		});
+
+		const participants = await prisma.conversationParticipant.findMany({
+			where: { conversationId },
+			select: { userId: true }
+		});
+		const recipientIds = [...new Set(participants.map((participant) => participant.userId))].filter(
+			(userId) => userId !== socket.userId
+		);
+
+		await Promise.all(
+			recipientIds.map((recipientId) =>
+				createNotification(recipientId, 'NEW_MESSAGE', newMessage.id)
+			)
+		);
 
 		// Format and broadcast
 		const wsMessage = formatMessageForWs(newMessage);
