@@ -115,6 +115,22 @@ export {
 	type SearchParams,
 } from "./search.js";
 
+// Notification schemas
+export {
+	notificationTypeSchema,
+	notificationSchema,
+	listNotificationsParamsSchema,
+	notificationsListResponseSchema,
+	unreadCountResponseSchema,
+	markNotificationsReadRequestSchema,
+	type NotificationType,
+	type Notification,
+	type ListNotificationsParams,
+	type NotificationsListResponse,
+	type UnreadCountResponse,
+	type MarkNotificationsReadRequest,
+} from "./notifications.js";
+
 // WebSocket schemas
 export {
 	// Common types
@@ -158,6 +174,10 @@ export {
 	messageEditedSchema,
 	messageDeletedPayloadSchema,
 	messageDeletedSchema,
+	notificationNewPayloadSchema,
+	notificationNewSchema,
+	notificationClearedPayloadSchema,
+	notificationClearedSchema,
 	ackPayloadSchema,
 	ackSchema,
 	errorPayloadSchema,
@@ -168,6 +188,10 @@ export {
 	type MessageEdited,
 	type MessageDeletedPayload,
 	type MessageDeleted,
+	type NotificationNewPayload,
+	type NotificationNew,
+	type NotificationClearedPayload,
+	type NotificationCleared,
 	type AckPayload,
 	type Ack,
 	type ErrorPayload,

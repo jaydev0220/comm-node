@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { notificationTypeSchema } from "./notifications.js";
 
 // ============================================================================
 // Common Types
@@ -30,6 +31,8 @@ export const wsServerEventSchema = z.enum([
 	"message:new",
 	"message:edited",
 	"message:deleted",
+	"notification:new",
+	"notification:cleared",
 	"ack",
 	"error",
 ]);
@@ -181,6 +184,33 @@ export const messageDeletedSchema = z.object({
 });
 export type MessageDeleted = z.infer<typeof messageDeletedSchema>;
 
+/** notification:new - new notification push */
+export const notificationNewPayloadSchema = z.object({
+	id: z.uuid(),
+	type: notificationTypeSchema,
+	referenceId: z.uuid(),
+	createdAt: z.iso.datetime(),
+});
+export type NotificationNewPayload = z.infer<typeof notificationNewPayloadSchema>;
+
+export const notificationNewSchema = z.object({
+	event: z.literal("notification:new"),
+	payload: notificationNewPayloadSchema,
+});
+export type NotificationNew = z.infer<typeof notificationNewSchema>;
+
+/** notification:cleared - notification read state sync */
+export const notificationClearedPayloadSchema = z.object({
+	ids: z.array(z.uuid()),
+});
+export type NotificationClearedPayload = z.infer<typeof notificationClearedPayloadSchema>;
+
+export const notificationClearedSchema = z.object({
+	event: z.literal("notification:cleared"),
+	payload: notificationClearedPayloadSchema,
+});
+export type NotificationCleared = z.infer<typeof notificationClearedSchema>;
+
 /** ack - acknowledgement of successful operation */
 export const ackPayloadSchema = z.object({
 	requestId: requestIdSchema,
@@ -212,6 +242,8 @@ export const wsServerMessageSchema = z.discriminatedUnion("event", [
 	messageNewSchema,
 	messageEditedSchema,
 	messageDeletedSchema,
+	notificationNewSchema,
+	notificationClearedSchema,
 	ackSchema,
 	wsErrorSchema,
 ]);
