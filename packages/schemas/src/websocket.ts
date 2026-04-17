@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { friendshipSchema } from "./friends.js";
 import { notificationTypeSchema } from "./notifications.js";
 
 // ============================================================================
@@ -33,6 +34,7 @@ export const wsServerEventSchema = z.enum([
 	"message:deleted",
 	"notification:new",
 	"notification:cleared",
+	"friend:accepted",
 	"ack",
 	"error",
 ]);
@@ -211,6 +213,16 @@ export const notificationClearedSchema = z.object({
 });
 export type NotificationCleared = z.infer<typeof notificationClearedSchema>;
 
+/** friend:accepted - friendship accepted sync */
+export const friendAcceptedPayloadSchema = friendshipSchema;
+export type FriendAcceptedPayload = z.infer<typeof friendAcceptedPayloadSchema>;
+
+export const friendAcceptedSchema = z.object({
+	event: z.literal("friend:accepted"),
+	payload: friendAcceptedPayloadSchema,
+});
+export type FriendAccepted = z.infer<typeof friendAcceptedSchema>;
+
 /** ack - acknowledgement of successful operation */
 export const ackPayloadSchema = z.object({
 	requestId: requestIdSchema,
@@ -244,6 +256,7 @@ export const wsServerMessageSchema = z.discriminatedUnion("event", [
 	messageDeletedSchema,
 	notificationNewSchema,
 	notificationClearedSchema,
+	friendAcceptedSchema,
 	ackSchema,
 	wsErrorSchema,
 ]);
