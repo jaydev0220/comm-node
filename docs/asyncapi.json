@@ -41,9 +41,18 @@
 					"$ref": "#/components/messages/MessageDeleted"
 				},
 				"serverToClient.message.3": {
-					"$ref": "#/components/messages/Ack"
+					"$ref": "#/components/messages/NotificationNew"
 				},
 				"serverToClient.message.4": {
+					"$ref": "#/components/messages/NotificationCleared"
+				},
+				"serverToClient.message.5": {
+					"$ref": "#/components/messages/FriendAccepted"
+				},
+				"serverToClient.message.6": {
+					"$ref": "#/components/messages/Ack"
+				},
+				"serverToClient.message.7": {
 					"$ref": "#/components/messages/Error"
 				}
 			},
@@ -76,7 +85,7 @@
 				"$ref": "#/channels/~1ws"
 			},
 			"summary": "Events sent from the server to the client",
-			"description": "The server pushes realtime updates to all connected participants of a conversation.",
+			"description": "The server pushes realtime conversation, notification, and friendship updates.",
 			"messages": [
 				{
 					"$ref": "#/channels/~1ws/messages/serverToClient.message.0"
@@ -92,6 +101,15 @@
 				},
 				{
 					"$ref": "#/channels/~1ws/messages/serverToClient.message.4"
+				},
+				{
+					"$ref": "#/channels/~1ws/messages/serverToClient.message.5"
+				},
+				{
+					"$ref": "#/channels/~1ws/messages/serverToClient.message.6"
+				},
+				{
+					"$ref": "#/channels/~1ws/messages/serverToClient.message.7"
 				}
 			]
 		}
@@ -125,6 +143,41 @@
 						"type": "string",
 						"description": "Absolute avatar URL or relative /uploads path",
 						"nullable": true
+					}
+				}
+			},
+			"FriendUser": {
+				"type": "object",
+				"required": ["id", "email", "username", "displayName", "createdAt", "updatedAt"],
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid"
+					},
+					"email": {
+						"type": "string",
+						"format": "email"
+					},
+					"username": {
+						"type": "string",
+						"example": "jane_doe"
+					},
+					"displayName": {
+						"type": "string",
+						"example": "Jane Doe"
+					},
+					"avatarUrl": {
+						"type": "string",
+						"description": "Absolute avatar URL or relative /uploads path",
+						"nullable": true
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"updatedAt": {
+						"type": "string",
+						"format": "date-time"
 					}
 				}
 			},
@@ -223,6 +276,34 @@
 						"nullable": true
 					},
 					"createdAt": {
+						"type": "string",
+						"format": "date-time"
+					}
+				}
+			},
+			"Friendship": {
+				"type": "object",
+				"required": ["id", "status", "requester", "addressee", "createdAt", "updatedAt"],
+				"properties": {
+					"id": {
+						"type": "string",
+						"format": "uuid"
+					},
+					"status": {
+						"type": "string",
+						"enum": ["PENDING", "ACCEPTED", "BLOCKED"]
+					},
+					"requester": {
+						"$ref": "#/components/schemas/FriendUser"
+					},
+					"addressee": {
+						"$ref": "#/components/schemas/FriendUser"
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"updatedAt": {
 						"type": "string",
 						"format": "date-time"
 					}
@@ -720,6 +801,56 @@
 								"type": "FRIEND_REQUEST",
 								"referenceId": "a7b8c9d0-e1f2-3456-abcd-567890123456",
 								"createdAt": "2026-04-16T10:05:00Z"
+							}
+						}
+					}
+				]
+			},
+			"FriendAccepted": {
+				"name": "friend:accepted",
+				"title": "Friend request accepted",
+				"summary": "Server pushes to both the requester and addressee when a friend request transitions to ACCEPTED. Client should append the new friend to the local friends list.",
+				"payload": {
+					"type": "object",
+					"required": ["event", "payload"],
+					"properties": {
+						"event": {
+							"type": "string",
+							"const": "friend:accepted"
+						},
+						"payload": {
+							"$ref": "#/components/schemas/Friendship"
+						}
+					}
+				},
+				"examples": [
+					{
+						"name": "Friend request accepted",
+						"payload": {
+							"event": "friend:accepted",
+							"payload": {
+								"id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+								"status": "ACCEPTED",
+								"requester": {
+									"id": "11111111-2222-3333-4444-555555555555",
+									"email": "jane@example.com",
+									"username": "jane_doe",
+									"displayName": "Jane Doe",
+									"avatarUrl": null,
+									"createdAt": "2026-04-01T09:00:00Z",
+									"updatedAt": "2026-04-10T12:00:00Z"
+								},
+								"addressee": {
+									"id": "66666666-7777-8888-9999-000000000000",
+									"email": "john@example.com",
+									"username": "john_doe",
+									"displayName": "John Doe",
+									"avatarUrl": null,
+									"createdAt": "2026-04-02T10:00:00Z",
+									"updatedAt": "2026-04-11T13:00:00Z"
+								},
+								"createdAt": "2026-04-16T10:05:00Z",
+								"updatedAt": "2026-04-16T10:07:00Z"
 							}
 						}
 					}
