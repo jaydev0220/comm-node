@@ -42,6 +42,13 @@ interface ApiError {
 	status: number;
 }
 
+interface ErrorResponse {
+	error?: {
+		message?: string;
+	};
+	message?: string;
+}
+
 export class ApiClient {
 	private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
 		const url = getApiUrl(endpoint);
@@ -74,9 +81,11 @@ export class ApiClient {
 
 			if (responseText) {
 				try {
-					const data = JSON.parse(responseText) as Partial<{ message?: string }>;
+					const data = JSON.parse(responseText) as ErrorResponse;
 
-					if (typeof data.message === 'string' && data.message.length > 0) {
+					if (typeof data.error?.message === 'string' && data.error.message.length > 0) {
+						error.message = data.error.message;
+					} else if (typeof data.message === 'string' && data.message.length > 0) {
 						error.message = data.message;
 					}
 				} catch {
@@ -114,6 +123,13 @@ export class ApiClient {
 	async delete<T>(endpoint: string): Promise<T> {
 		return this.request<T>(endpoint, {
 			method: 'DELETE'
+		});
+	}
+
+	async patch<T>(endpoint: string, data: unknown): Promise<T> {
+		return this.request<T>(endpoint, {
+			method: 'PATCH',
+			body: JSON.stringify(data)
 		});
 	}
 }
