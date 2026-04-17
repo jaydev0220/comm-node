@@ -16,6 +16,19 @@ export interface FriendsResponse {
 	data: FriendWithPresence[];
 }
 
+export interface Friendship {
+	id: string;
+	status: 'PENDING' | 'ACCEPTED' | 'BLOCKED';
+	requester: User;
+	addressee: User;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface FriendRequestsResponse {
+	data: Friendship[];
+}
+
 export interface AuthResponse {
 	accessToken: string;
 	user: User;
