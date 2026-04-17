@@ -1,4 +1,5 @@
 import type {
+	Friendship,
 	NotificationClearedPayload,
 	NotificationNewPayload,
 	WsServerMessage,
@@ -197,6 +198,22 @@ export const broadcastNotificationCleared = (
 		event: 'notification:cleared',
 		payload: { ids: [...ids] }
 	});
+};
+
+/**
+ * Broadcast friend acceptance sync to requester and addressee.
+ */
+export const broadcastFriendAccepted = (friendship: Friendship): void => {
+	const message: WsServerMessage = {
+		event: 'friend:accepted',
+		payload: friendship
+	};
+
+	broadcastToUser(friendship.requester.id, message);
+
+	if (friendship.requester.id !== friendship.addressee.id) {
+		broadcastToUser(friendship.addressee.id, message);
+	}
 };
 
 /**

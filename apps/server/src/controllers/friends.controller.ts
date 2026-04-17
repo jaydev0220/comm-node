@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express';
 import type { FriendsListResponse } from '@packages/schemas';
 import * as friendsService from '../services/friends.service.js';
+import { broadcastFriendAccepted } from '../ws/broadcast.js';
 
 export const listFriends: RequestHandler = async (req, res) => {
 	const friends = await friendsService.listFriends(req.user!.sub);
@@ -26,6 +27,14 @@ export const respondToRequest: RequestHandler = async (req, res) => {
 	const result = await friendsService.respondToRequest(req.user!.sub, requestId, req.body.action);
 
 	if (result) {
+		if (result.status === 'ACCEPTED') {
+			try {
+				broadcastFriendAccepted(result);
+			} catch (error) {
+				console.error('[WS] friend:accepted broadcast error:', error);
+			}
+		}
+
 		res.json(result);
 	} else {
 		res.status(200).json({ message: 'Request rejected' });
