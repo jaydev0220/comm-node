@@ -34,6 +34,11 @@ export interface OffsetPage {
 	hasMore: boolean;
 }
 
+export interface SearchUsersResponse {
+	data: User[];
+	pagination: OffsetPage;
+}
+
 export interface ChatParticipant {
 	user: User;
 	role: 'OWNER' | 'ADMIN' | 'MEMBER';
