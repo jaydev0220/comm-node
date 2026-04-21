@@ -1,9 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type SubmitEvent } from 'react';
-import { House, X } from 'lucide-react';
+import { House, Users, X } from 'lucide-react';
 import Avatar from '@/components/avatar';
 import { DmView } from '@/components/dm-view';
+import { GroupChatView } from '@/components/group-chat-view';
+import { GroupsHomeView } from '@/components/groups-home-view';
 import { HomeView } from '@/components/home-view';
 import { useAuthSession } from '@/components/auth-session-provider';
 import { api } from '@/lib/api';
@@ -21,7 +23,7 @@ import type {
 } from '@/lib/api-types';
 import { Separator } from '@/components/ui';
 
-type PageState = 'home' | 'dm' | 'group';
+type PageState = 'home' | 'dm' | 'groups-home' | 'group';
 type FriendStatusFilter = 'all' | 'online' | 'offline';
 type FriendAction = 'block' | 'remove';
 type RequestAction = 'accept' | 'reject';
@@ -84,6 +86,7 @@ export default function AppPage() {
 		action: FriendAction;
 	} | null>(null);
 	const [selectedDmFriendId, setSelectedDmFriendId] = useState<string | null>(null);
+	const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 	const openMenuContainerRef = useRef<HTMLDivElement | null>(null);
 
 	const loadFriendData = useCallback(async () => {
@@ -352,6 +355,11 @@ export default function AppPage() {
 		setPageState('dm');
 	}, []);
 
+	const handleOpenGroup = useCallback((groupId: string) => {
+		setSelectedGroupId(groupId);
+		setPageState('group');
+	}, []);
+
 	const dismissToast = (toastId: string) => {
 		setFriendRequestToasts((currentToasts) =>
 			currentToasts.filter((toast) => toast.id !== toastId)
@@ -406,12 +414,25 @@ export default function AppPage() {
 
 		return <DmView accessToken={accessToken} currentUser={user} friend={selectedDmFriend} />;
 	};
-	const renderGroupChat = () => <></>;
+
+	const renderGroupsHome = () => <GroupsHomeView friends={friends} onOpenGroup={handleOpenGroup} />;
+
+	const renderGroupChat = () => {
+		if (!selectedGroupId || !accessToken) {
+			return (
+				<div className="text-text-muted flex h-full w-full items-center justify-center px-6 text-sm">
+					請先從群組列表選擇對話
+				</div>
+			);
+		}
+
+		return <GroupChatView accessToken={accessToken} currentUser={user} groupId={selectedGroupId} />;
+	};
 
 	return (
 		<div className="flex h-dvh w-dvw overflow-hidden">
 			<aside className="bg-surface border-border relative flex h-dvh w-20 flex-col overflow-hidden border-r p-3">
-				<div className="w-full">
+				<div className="flex w-full flex-col gap-2">
 					<button
 						type="button"
 						aria-label="回到好友首頁"
@@ -419,6 +440,14 @@ export default function AppPage() {
 						onClick={() => setPageState('home')}
 					>
 						<House size={32} />
+					</button>
+					<button
+						type="button"
+						aria-label="進入群組首頁"
+						className="border-border hover:bg-surface-raised flex aspect-square h-auto w-full cursor-pointer items-center justify-center rounded-full border"
+						onClick={() => setPageState('groups-home')}
+					>
+						<Users size={32} />
 					</button>
 				</div>
 
@@ -440,7 +469,13 @@ export default function AppPage() {
 			</aside>
 
 			<main className="h-dvh grow">
-				{pageState === 'home' ? renderHome() : pageState === 'dm' ? renderDM() : renderGroupChat()}
+				{pageState === 'home'
+					? renderHome()
+					: pageState === 'dm'
+						? renderDM()
+						: pageState === 'groups-home'
+							? renderGroupsHome()
+							: renderGroupChat()}
 			</main>
 			{friendRequestToasts.length > 0 ? (
 				<div className="pointer-events-none fixed top-4 right-4 z-50 flex w-80 flex-col gap-2">
