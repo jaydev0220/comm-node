@@ -2,7 +2,7 @@ import { getAssetUrl } from '@/lib/api';
 import Image from 'next/image';
 import { useMemo, useState } from 'react';
 
-type AvatarSize = 'sm' | 'md' | 'lg';
+type AvatarSize = 'sm' | 'md' | 'lg' | 'xl';
 
 interface AvatarProps {
 	name: string;
@@ -13,7 +13,8 @@ interface AvatarProps {
 const SIZE_CLASSES: Record<AvatarSize, string> = {
 	sm: 'size-8 text-sm',
 	md: 'size-10',
-	lg: 'size-12 text-lg'
+	lg: 'size-12 text-lg',
+	xl: 'size-28 text-3xl'
 };
 
 const getInitials = (name: string): string => {
@@ -37,15 +38,16 @@ export default function Avatar({ name, avatarUrl, size }: AvatarProps) {
 
 	return (
 		<div
-			className={`border-border hover:bg-surface-raised flex cursor-pointer items-center justify-center rounded-full border ${SIZE_CLASSES[size]}`}
+			className={`border-border bg-surface hover:bg-surface-raised flex cursor-pointer items-center justify-center overflow-hidden rounded-full border ${SIZE_CLASSES[size]}`}
 		>
 			{shouldRenderImage ? (
 				<Image
 					src={resolvedAvatarUrl}
 					alt={name}
 					onError={() => setHasImageError(true)}
-					width={32}
-					height={32}
+					width={48}
+					height={48}
+					className="size-full object-cover"
 				/>
 			) : (
 				<span className="text-center select-none" aria-hidden={true}>
