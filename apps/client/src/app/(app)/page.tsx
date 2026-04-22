@@ -7,6 +7,7 @@ import { DmView } from '@/components/dm-view';
 import { GroupChatView } from '@/components/group-chat-view';
 import { GroupsHomeView } from '@/components/groups-home-view';
 import { HomeView } from '@/components/home-view';
+import { ProfileView } from '@/components/profile-view';
 import { useAuthSession } from '@/components/auth-session-provider';
 import { api } from '@/lib/api';
 import {
@@ -23,7 +24,7 @@ import type {
 } from '@/lib/api-types';
 import { Separator } from '@/components/ui';
 
-type PageState = 'home' | 'dm' | 'groups-home' | 'group';
+type PageState = 'home' | 'dm' | 'groups-home' | 'group' | 'profile';
 type FriendStatusFilter = 'all' | 'online' | 'offline';
 type FriendAction = 'block' | 'remove';
 type RequestAction = 'accept' | 'reject';
@@ -62,7 +63,7 @@ const buildUserSearchQuery = (query: string): string => {
 };
 
 export default function AppPage() {
-	const { user, accessToken } = useAuthSession();
+	const { user, accessToken, reloadSession } = useAuthSession();
 	const [friends, setFriends] = useState<FriendWithPresence[]>([]);
 	const [pendingRequests, setPendingRequests] = useState<Friendship[]>([]);
 	const [friendRequestToasts, setFriendRequestToasts] = useState<FriendRequestToast[]>([]);
@@ -429,6 +430,10 @@ export default function AppPage() {
 		return <GroupChatView accessToken={accessToken} currentUser={user} groupId={selectedGroupId} />;
 	};
 
+	const renderProfile = () => (
+		<ProfileView user={user} accessToken={accessToken} onProfileSaved={reloadSession} />
+	);
+
 	return (
 		<div className="flex h-dvh w-dvw overflow-hidden">
 			<aside className="bg-surface border-border relative flex h-dvh w-20 flex-col overflow-hidden border-r p-3">
@@ -464,7 +469,14 @@ export default function AppPage() {
 				</div>
 
 				<div className="flex aspect-square w-full items-center justify-center">
-					<Avatar name={user.displayName} avatarUrl={user.avatarUrl} size="lg" />
+					<button
+						type="button"
+						onClick={() => setPageState('profile')}
+						aria-label="開啟個人設定"
+						className="rounded-full"
+					>
+						<Avatar name={user.displayName} avatarUrl={user.avatarUrl} size="lg" />
+					</button>
 				</div>
 			</aside>
 
@@ -475,7 +487,9 @@ export default function AppPage() {
 						? renderDM()
 						: pageState === 'groups-home'
 							? renderGroupsHome()
-							: renderGroupChat()}
+							: pageState === 'profile'
+								? renderProfile()
+								: renderGroupChat()}
 			</main>
 			{friendRequestToasts.length > 0 ? (
 				<div className="pointer-events-none fixed top-4 right-4 z-50 flex w-80 flex-col gap-2">
