@@ -17,7 +17,7 @@ export function GroupsGrid({ groups, onOpenGroup, onCreateGroup }: GroupsGridPro
 			<button
 				type="button"
 				onClick={onCreateGroup}
-				className="border-border text-text-muted bg-surface hover:bg-surface-raised flex aspect-3/4 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed transition-colors"
+				className="border-border text-text-muted bg-surface hover:bg-surface-raised mx-auto flex aspect-4/5 w-[88%] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed transition-colors"
 			>
 				<Plus className="mb-2 size-6" />
 				<span className="text-sm font-medium">建立群組</span>
