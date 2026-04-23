@@ -114,7 +114,10 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 		[avatarPreviewUrl]
 	);
 
-	const resolvedCurrentAvatarUrl = useMemo(() => getAssetUrl(user.avatarUrl) ?? null, [user.avatarUrl]);
+	const resolvedCurrentAvatarUrl = useMemo(
+		() => getAssetUrl(user.avatarUrl) ?? null,
+		[user.avatarUrl]
+	);
 	const avatarImageUrl = avatarPreviewUrl ?? resolvedCurrentAvatarUrl;
 	const isPreviewBlob = avatarImageUrl?.startsWith('blob:') ?? false;
 	const normalizedUsername = username.trim();
@@ -290,142 +293,144 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 	};
 
 	return (
-		<div className="flex h-full w-full overflow-hidden">
-			<aside className="border-border bg-surface flex h-full w-80 shrink-0 flex-col border-r px-8 py-8">
-				<button
-					type="button"
-					onClick={handleAvatarPickerOpen}
-					disabled={isSaving}
-					className="border-border bg-surface-raised group relative mx-auto mb-5 flex size-44 cursor-pointer items-center justify-center overflow-hidden rounded-full border transition-colors hover:bg-border-subtle disabled:cursor-not-allowed"
-				>
-					{avatarImageUrl ? (
-						<Image
-							src={avatarImageUrl}
-							alt="個人頭像"
-							fill
-							sizes="176px"
-							unoptimized={isPreviewBlob}
-							className="object-cover"
-						/>
-					) : (
-						<span className="text-text-primary text-5xl font-semibold select-none" aria-hidden={true}>
-							{getInitials(normalizedDisplayName || user.displayName || user.username)}
+		<div className="flex h-full w-full justify-center overflow-hidden">
+			<div className="flex h-full w-full max-w-5xl p-8">
+				<div className="flex h-full w-80 shrink-0 flex-col items-center gap-4">
+					<button
+						type="button"
+						onClick={handleAvatarPickerOpen}
+						disabled={isSaving}
+						className="border-border bg-surface-raised group hover:bg-border-subtle relative flex size-44 cursor-pointer items-center justify-center overflow-hidden rounded-full border transition-colors disabled:cursor-not-allowed"
+					>
+						{avatarImageUrl ? (
+							<Image
+								src={avatarImageUrl}
+								alt="個人頭像"
+								fill
+								sizes="176px"
+								unoptimized={isPreviewBlob}
+								className="object-cover"
+							/>
+						) : (
+							<span
+								className="text-text-primary text-5xl font-semibold select-none"
+								aria-hidden={true}
+							>
+								{getInitials(normalizedDisplayName || user.displayName || user.username)}
+							</span>
+						)}
+						<span className="bg-surface/80 text-text-secondary absolute inset-0 flex flex-col items-center justify-center gap-1.5 opacity-0 backdrop-blur-xs transition-opacity group-hover:opacity-100">
+							<Camera className="size-5" />
+							<span className="text-xs font-medium">更換頭像</span>
 						</span>
-					)}
-					<span className="bg-surface/80 text-text-secondary absolute inset-0 flex flex-col items-center justify-center gap-1.5 opacity-0 backdrop-blur-xs transition-opacity group-hover:opacity-100">
-						<Camera className="size-5" />
-						<span className="text-xs font-medium">更換頭像</span>
-					</span>
-				</button>
+					</button>
 
-				<input
-					ref={fileInputRef}
-					type="file"
-					accept={AVATAR_ACCEPT_ATTRIBUTE}
-					onChange={handleAvatarSelected}
-					className="hidden"
-					disabled={isSaving}
-				/>
+					<input
+						ref={fileInputRef}
+						type="file"
+						accept={AVATAR_ACCEPT_ATTRIBUTE}
+						onChange={handleAvatarSelected}
+						className="hidden"
+						disabled={isSaving}
+					/>
 
-				<p className="text-text-muted text-center text-xs leading-5">
-					點擊頭像即可上傳新圖片。
-					<br />
-					支援 JPG、PNG、GIF、WEBP。
-					<br />
-					建議使用 512x512，檔案需小於 10MB。
-				</p>
-				{errors.avatar ? <p className="text-destructive mt-3 text-center text-xs">{errors.avatar}</p> : null}
-			</aside>
+					<p className="text-text-muted text-center text-xs leading-5">
+						點擊頭像即可上傳新圖片。
+						<br />
+						支援 JPG, PNG, GIF, WEBP。
+						<br />
+						建議使用 512x512，檔案需小於 10MB。
+					</p>
 
-			<section className="relative min-h-0 grow bg-background">
-				<form
-					onSubmit={(event) => {
-						event.preventDefault();
-						void handleSave();
-					}}
-					className="h-full"
-				>
-					<div className="invisible-scroll-y h-full overflow-y-auto px-8 pt-8 pb-28 md:px-10">
-						<div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-							<div>
-								<h1 className="text-text-primary text-2xl font-semibold">Profile Settings</h1>
-								<p className="text-text-muted mt-2 text-sm">
-									Manage your account profile and avatar.
-								</p>
-							</div>
+					<div className="text-text-muted flex items-center gap-2 text-sm">
+						<ImagePlus className="size-4" />
+						<span>頭像將於點擊保存後更新。</span>
+					</div>
+					{errors.avatar ? (
+						<p className="text-destructive mt-3 text-center text-xs">{errors.avatar}</p>
+					) : null}
+				</div>
 
-							{errors.general ? (
-								<div className="bg-destructive-subtle text-destructive rounded-lg px-4 py-3 text-sm">
-									{errors.general}
-								</div>
-							) : null}
+				<section className="relative min-h-0 grow">
+					<form
+						onSubmit={(event) => {
+							event.preventDefault();
+							void handleSave();
+						}}
+						className="h-full"
+					>
+						<div className="invisible-scroll-y h-full overflow-y-auto pb-12">
+							<div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+								<h1 className="text-text-primary text-2xl font-semibold">個人檔案設定</h1>
 
-							{saveSuccess ? (
-								<div className="bg-success-subtle text-success rounded-lg px-4 py-3 text-sm">
-									{saveSuccess}
-								</div>
-							) : null}
+								{errors.general ? (
+									<div className="bg-destructive-subtle text-destructive rounded-lg px-4 py-3 text-sm">
+										{errors.general}
+									</div>
+								) : null}
 
-							<FormField
-								label="Username"
-								htmlFor="profile-username"
-								error={errors.username}
-								description="3-32 characters. Lowercase letters, numbers, and underscore only."
-								required
-							>
-								<Input
-									id="profile-username"
-									type="text"
-									value={username}
-									onChange={(event) => setUsername(event.target.value)}
-									autoComplete="username"
-									error={Boolean(errors.username)}
-									disabled={isSaving}
-								/>
-							</FormField>
+								{saveSuccess ? (
+									<div className="bg-success-subtle text-success rounded-lg px-4 py-3 text-sm">
+										{saveSuccess}
+									</div>
+								) : null}
 
-							<FormField
-								label="Display name"
-								htmlFor="profile-display-name"
-								error={errors.displayName}
-								description="Visible name shown to other users."
-								required
-							>
-								<Input
-									id="profile-display-name"
-									type="text"
-									value={displayName}
-									onChange={(event) => setDisplayName(event.target.value)}
-									autoComplete="name"
-									error={Boolean(errors.displayName)}
-									disabled={isSaving}
-								/>
-							</FormField>
+								<FormField
+									label="使用者名稱"
+									htmlFor="profile-username"
+									error={errors.username}
+									description="長度 3~32 個字。僅接受小寫字母、數字、底線的組合。"
+									required
+								>
+									<Input
+										id="profile-username"
+										type="text"
+										value={username}
+										onChange={(event) => setUsername(event.target.value)}
+										autoComplete="username"
+										error={Boolean(errors.username)}
+										disabled={isSaving}
+									/>
+								</FormField>
 
-							<div className="text-text-muted flex items-center gap-2 text-sm">
-								<ImagePlus className="size-4" />
-								<span>Avatar updates are applied after pressing Save.</span>
+								<FormField
+									label="顯示名稱"
+									htmlFor="profile-display-name"
+									error={errors.displayName}
+									description="其他使用者看見的名稱。"
+									required
+								>
+									<Input
+										id="profile-display-name"
+										type="text"
+										value={displayName}
+										onChange={(event) => setDisplayName(event.target.value)}
+										autoComplete="name"
+										error={Boolean(errors.displayName)}
+										disabled={isSaving}
+									/>
+								</FormField>
 							</div>
 						</div>
-					</div>
 
-					<div className="border-border bg-surface absolute right-0 bottom-0 left-0 border-t px-8 py-4 md:px-10">
-						<div className="mx-auto flex w-full max-w-3xl items-center justify-end gap-3">
-							<Button
-								type="button"
-								variant="secondary"
-								onClick={handleDiscard}
-								disabled={!hasUnsavedChanges || isSaving}
-							>
-								Discard
-							</Button>
-							<Button type="submit" loading={isSaving} disabled={!hasUnsavedChanges}>
-								Save
-							</Button>
+						<div className="absolute right-0 bottom-0 left-0">
+							<div className="mx-auto flex w-full max-w-3xl items-center justify-end gap-3">
+								<Button
+									type="button"
+									variant="secondary"
+									onClick={handleDiscard}
+									disabled={!hasUnsavedChanges || isSaving}
+								>
+									捨棄
+								</Button>
+								<Button type="submit" loading={isSaving} disabled={!hasUnsavedChanges}>
+									保存
+								</Button>
+							</div>
 						</div>
-					</div>
-				</form>
-			</section>
+					</form>
+				</section>
+			</div>
 		</div>
 	);
 }
