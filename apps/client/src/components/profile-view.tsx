@@ -359,7 +359,7 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 						}}
 						className="h-full"
 					>
-						<div className="invisible-scroll-y h-full overflow-y-auto pb-12">
+						<div className="invisible-scroll-y h-full overflow-y-auto px-4 pb-12">
 							<div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
 								<h1 className="text-text-primary text-2xl font-semibold">個人檔案設定</h1>
 
