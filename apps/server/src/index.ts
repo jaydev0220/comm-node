@@ -48,7 +48,14 @@ app.get('/health', (_req, res) => {
 	res.json({ status: 'ok' });
 });
 // Static file serving for uploads
-app.use('/uploads', express.static(uploadsDirectoryPath));
+app.use(
+	'/uploads',
+	express.static(uploadsDirectoryPath, {
+		setHeaders: (res) => {
+			res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+		}
+	})
+);
 // API routes
 app.use('/api', routes);
 // Error handling
