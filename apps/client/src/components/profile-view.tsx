@@ -84,6 +84,7 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const [username, setUsername] = useState(user.username);
 	const [displayName, setDisplayName] = useState(user.displayName);
+	const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(user.avatarUrl ?? null);
 	const [avatarFile, setAvatarFile] = useState<File | null>(null);
 	const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
 	const [errors, setErrors] = useState<ValidationErrors>({});
@@ -93,6 +94,7 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 	useEffect(() => {
 		setUsername(user.username);
 		setDisplayName(user.displayName);
+		setCurrentAvatarUrl(user.avatarUrl ?? null);
 		setAvatarFile(null);
 		setSaveSuccess(null);
 		setErrors({});
@@ -103,7 +105,7 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 
 			return null;
 		});
-	}, [user.displayName, user.username]);
+	}, [user.avatarUrl, user.displayName, user.username]);
 
 	useEffect(
 		() => () => {
@@ -115,11 +117,10 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 	);
 
 	const resolvedCurrentAvatarUrl = useMemo(
-		() => getAssetUrl(user.avatarUrl) ?? null,
-		[user.avatarUrl]
+		() => getAssetUrl(currentAvatarUrl) ?? null,
+		[currentAvatarUrl]
 	);
 	const avatarImageUrl = avatarPreviewUrl ?? resolvedCurrentAvatarUrl;
-	const isPreviewBlob = avatarImageUrl?.startsWith('blob:') ?? false;
 	const normalizedUsername = username.trim();
 	const normalizedDisplayName = displayName.trim();
 	const hasTextChanges =
@@ -248,7 +249,8 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 				}
 
 				if (Object.keys(updatePayload).length > 0) {
-					await api.patch<User>('/users/me', updatePayload);
+					const updatedUser = await api.patch<User>('/users/me', updatePayload);
+					setCurrentAvatarUrl(updatedUser.avatarUrl ?? null);
 				}
 			}
 
@@ -271,6 +273,9 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 				if (!response.ok) {
 					throw new Error(await getResponseErrorMessage(response, '頭像上傳失敗，請稍後再試'));
 				}
+
+				const updatedUser = (await response.json()) as User;
+				setCurrentAvatarUrl(updatedUser.avatarUrl ?? null);
 			}
 
 			setAvatarFile(null);
@@ -308,7 +313,7 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 								alt="個人頭像"
 								fill
 								sizes="176px"
-								unoptimized={isPreviewBlob}
+								unoptimized
 								className="object-cover"
 							/>
 						) : (

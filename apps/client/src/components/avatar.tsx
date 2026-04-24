@@ -44,6 +44,7 @@ export default function Avatar({ name, avatarUrl, size }: AvatarProps) {
 				<Image
 					src={resolvedAvatarUrl}
 					alt={name}
+					unoptimized
 					onError={() => setHasImageError(true)}
 					width={48}
 					height={48}
