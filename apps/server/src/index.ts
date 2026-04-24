@@ -5,12 +5,14 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { env } from './lib/env.js';
+import { ensureUploadsDirectory } from './lib/uploads.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import routes from './routes/index.js';
 import { createWebSocketServer } from './ws/index.js';
 import './ws/handlers.js';
 
 const app = express();
+const uploadsDirectoryPath = ensureUploadsDirectory();
 
 // Trust proxy (for rate limiting headers behind reverse proxy)
 app.set('trust proxy', 1);
@@ -46,7 +48,7 @@ app.get('/health', (_req, res) => {
 	res.json({ status: 'ok' });
 });
 // Static file serving for uploads
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(uploadsDirectoryPath));
 // API routes
 app.use('/api', routes);
 // Error handling

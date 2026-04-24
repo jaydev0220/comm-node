@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { errors } from '../middleware/error-handler.js';
+import { ensureUploadsDirectory } from '../lib/uploads.js';
 
 const DEFAULT_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const AVATAR_FIELD_NAME = 'avatar';
@@ -22,10 +23,11 @@ const GENERIC_ALLOWED_MIME_TYPES = [
 	'text/plain'
 ];
 const AVATAR_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
+const uploadsDirectoryPath = ensureUploadsDirectory();
 // Configure multer storage
 const storage = multer.diskStorage({
 	destination: (_req, _file, cb) => {
-		cb(null, 'uploads/');
+		cb(null, uploadsDirectoryPath);
 	},
 	filename: (_req, file, cb) => {
 		const ext = path.extname(file.originalname);
