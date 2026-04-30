@@ -180,11 +180,11 @@ function ProfileSetupContent() {
 	if (isCompleted) {
 		return (
 			<div className="flex flex-col items-center justify-center py-8 text-center">
-				<div className="size-16 rounded-full bg-success-subtle flex items-center justify-center mb-4">
-					<CheckCircle className="size-8 text-success" />
+				<div className="bg-success-subtle mb-4 flex size-16 items-center justify-center rounded-full">
+					<CheckCircle className="text-success size-8" />
 				</div>
-				<h1 className="text-xl font-bold text-text-primary mb-2">設定完成！</h1>
-				<p className="text-sm text-text-secondary mb-6">
+				<h1 className="text-text-primary mb-2 text-xl font-bold">設定完成！</h1>
+				<p className="text-text-secondary mb-6 text-sm">
 					您的帳號已建立完成，將在 {countdown} 秒後自動前往首頁
 				</p>
 				<Button type="button" size="lg" onClick={() => router.replace('/')}>
@@ -197,12 +197,12 @@ function ProfileSetupContent() {
 	return (
 		<>
 			{flow === 'google' && (
-				<div className="flex items-center justify-center gap-2 mb-2">
+				<div className="mb-2 flex items-center justify-center gap-2">
 					<SiGoogle size={24} className="text-text-secondary" />
 				</div>
 			)}
-			<h1 className="text-2xl font-bold text-text-primary text-center mb-2">完成帳號設定</h1>
-			<p className="text-sm text-text-secondary text-center mb-8">
+			<h1 className="text-text-primary mb-2 text-center text-2xl font-bold">完成帳號設定</h1>
+			<p className="text-text-secondary mb-8 text-center text-sm">
 				{flow === 'google'
 					? '您已成功通過 Google 驗證，請完成以下資料設定'
 					: '請完成個人資料設定，即可開始使用 CommNode'}
@@ -210,7 +210,7 @@ function ProfileSetupContent() {
 
 			<form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-4">
 				{errors.general && (
-					<div className="p-3 rounded-lg bg-destructive-subtle text-destructive text-sm flex items-center gap-2">
+					<div className="bg-destructive-subtle text-destructive flex items-center gap-2 rounded-lg p-3 text-sm">
 						<AlertCircle className="size-4 shrink-0" />
 						{errors.general}
 					</div>
@@ -267,7 +267,7 @@ function ProfileSetupContent() {
 					/>
 				</FormField>
 
-				<Button type="submit" size="lg" className="w-full mt-6" loading={loading}>
+				<Button type="submit" size="lg" className="mt-6 w-full" loading={loading}>
 					完成註冊
 				</Button>
 			</form>
@@ -278,8 +278,8 @@ function ProfileSetupContent() {
 function LoadingFallback() {
 	return (
 		<div className="flex flex-col items-center justify-center py-8">
-			<Loader2 className="size-8 animate-spin text-action" />
-			<p className="text-sm text-text-secondary mt-4">載入中...</p>
+			<Loader2 className="text-action size-8 animate-spin" />
+			<p className="text-text-secondary mt-4 text-sm">載入中...</p>
 		</div>
 	);
 }

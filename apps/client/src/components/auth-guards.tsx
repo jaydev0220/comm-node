@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuthSession } from '@/components/auth-session-provider';
@@ -12,8 +12,8 @@ function AuthStateScreen({ message }: { message: string }) {
 	return (
 		<div className={`flex items-center justify-center ${FULL_SCREEN_BASE}`}>
 			<div className="flex flex-col items-center gap-4 text-center">
-				<Loader2 className="size-8 animate-spin text-action" />
-				<p className="text-sm text-text-secondary">{message}</p>
+				<Loader2 className="text-action size-8 animate-spin" />
+				<p className="text-text-secondary text-sm">{message}</p>
 			</div>
 		</div>
 	);
@@ -57,9 +57,9 @@ export function PublicAuthOnly({ children }: { children: ReactNode }) {
 	}
 
 	return (
-		<div className="min-h-screen bg-background p-4 text-text-primary">
+		<div className="bg-background text-text-primary min-h-screen p-4">
 			<div className="flex min-h-[calc(100vh-2rem)] items-center justify-center">
-				<div className="w-full max-w-md rounded-3xl border border-border bg-surface/95 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+				<div className="border-border bg-surface/95 w-full max-w-md rounded-3xl border p-6 shadow-sm backdrop-blur-sm sm:p-8">
 					{children}
 				</div>
 			</div>

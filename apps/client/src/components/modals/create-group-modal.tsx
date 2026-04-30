@@ -1,20 +1,7 @@
 'use client';
 
-import {
-	CircleAlert,
-	CircleCheck,
-	CircleX,
-	Search,
-	X,
-	type LucideIcon
-} from 'lucide-react';
-import {
-	useCallback,
-	useEffect,
-	useMemo,
-	useState,
-	type FormEvent
-} from 'react';
+import { CircleAlert, CircleCheck, CircleX, Search, X, type LucideIcon } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type SubmitEvent } from 'react';
 import Avatar from '@/components/avatar';
 import { Button, Input, Separator } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -196,7 +183,7 @@ export function CreateGroupModal({
 		});
 	};
 
-	const handleCreateGroup = async (event: FormEvent<HTMLFormElement>) => {
+	const handleCreateGroup = async (event: SubmitEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
 		if (!canSubmit) {
@@ -313,11 +300,7 @@ export function CreateGroupModal({
 													isSelected ? 'bg-action-subtle' : ''
 												}`}
 											>
-												<Avatar
-													name={friend.displayName}
-													avatarUrl={friend.avatarUrl}
-													size="sm"
-												/>
+												<Avatar name={friend.displayName} avatarUrl={friend.avatarUrl} size="sm" />
 												<div className="min-w-0 grow">
 													<p className="truncate text-sm font-medium">{friend.displayName}</p>
 													<p className="text-text-muted truncate text-xs">@{friend.username}</p>

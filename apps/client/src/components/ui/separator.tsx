@@ -5,9 +5,9 @@ interface SeparatorProps {
 export function Separator({ text }: SeparatorProps) {
 	return (
 		<div className="relative flex items-center py-4">
-			<div className="grow border-t border-border" />
-			{text && <span className="mx-4 shrink text-sm text-text-muted">{text}</span>}
-			<div className="grow border-t border-border" />
+			<div className="border-border grow border-t" />
+			{text && <span className="text-text-muted mx-4 shrink text-sm">{text}</span>}
+			<div className="border-border grow border-t" />
 		</div>
 	);
 }

@@ -98,7 +98,7 @@ export default function RegisterPage() {
 
 	return (
 		<>
-			<h1 className="text-2xl font-bold text-text-primary text-center mb-8">註冊 CommNode</h1>
+			<h1 className="text-text-primary mb-8 text-center text-2xl font-bold">註冊 CommNode</h1>
 
 			<Button
 				type="button"
@@ -115,7 +115,7 @@ export default function RegisterPage() {
 
 			<form onSubmit={handleSubmit} className="space-y-4">
 				{errors.general && (
-					<div className="p-3 rounded-lg bg-destructive-subtle text-destructive text-sm">
+					<div className="bg-destructive-subtle text-destructive rounded-lg p-3 text-sm">
 						{errors.general}
 					</div>
 				)}
@@ -169,12 +169,12 @@ export default function RegisterPage() {
 					/>
 				</FormField>
 
-				<Button type="submit" size="lg" className="w-full mt-6" loading={loading}>
+				<Button type="submit" size="lg" className="mt-6 w-full" loading={loading}>
 					下一步
 				</Button>
 			</form>
 
-			<p className="text-center text-sm text-text-secondary mt-6">
+			<p className="text-text-secondary mt-6 text-center text-sm">
 				已經有帳號？{' '}
 				<Link
 					href="/login"

@@ -23,7 +23,7 @@ function GoogleSetupRedirectContent() {
 	if (!token) {
 		return (
 			<div className="space-y-4">
-				<div className="p-3 rounded-lg bg-destructive-subtle text-destructive text-sm flex items-center gap-2">
+				<div className="bg-destructive-subtle text-destructive flex items-center gap-2 rounded-lg p-3 text-sm">
 					<AlertCircle className="size-4 shrink-0" />
 					連結已過期，請重新使用 Google 登入
 				</div>
@@ -36,8 +36,8 @@ function GoogleSetupRedirectContent() {
 
 	return (
 		<div className="flex flex-col items-center justify-center py-8">
-			<Loader2 className="size-8 animate-spin text-action" />
-			<p className="text-sm text-text-secondary mt-4">正在前往帳號設定頁...</p>
+			<Loader2 className="text-action size-8 animate-spin" />
+			<p className="text-text-secondary mt-4 text-sm">正在前往帳號設定頁...</p>
 		</div>
 	);
 }
@@ -45,8 +45,8 @@ function GoogleSetupRedirectContent() {
 function LoadingFallback() {
 	return (
 		<div className="flex flex-col items-center justify-center py-8">
-			<Loader2 className="size-8 animate-spin text-action" />
-			<p className="text-sm text-text-secondary mt-4">載入中...</p>
+			<Loader2 className="text-action size-8 animate-spin" />
+			<p className="text-text-secondary mt-4 text-sm">載入中...</p>
 		</div>
 	);
 }

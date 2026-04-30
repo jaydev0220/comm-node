@@ -29,21 +29,21 @@ function AuthSuccessContent() {
 	if (!accessToken) {
 		return (
 			<div className="flex flex-col items-center justify-center py-8">
-				<Loader2 className="size-8 animate-spin text-action" />
-				<p className="text-sm text-text-secondary mt-4">正在重新導向...</p>
+				<Loader2 className="text-action size-8 animate-spin" />
+				<p className="text-text-secondary mt-4 text-sm">正在重新導向...</p>
 			</div>
 		);
 	}
 
 	return (
 		<div className="flex flex-col items-center justify-center py-8">
-			<div className="size-16 rounded-full bg-success-subtle flex items-center justify-center mb-4">
-				<CheckCircle className="size-8 text-success" />
+			<div className="bg-success-subtle mb-4 flex size-16 items-center justify-center rounded-full">
+				<CheckCircle className="text-success size-8" />
 			</div>
-			<h1 className="text-xl font-bold text-text-primary mb-2">登入成功！</h1>
-			<p className="text-sm text-text-secondary">正在為您跳轉...</p>
+			<h1 className="text-text-primary mb-2 text-xl font-bold">登入成功！</h1>
+			<p className="text-text-secondary text-sm">正在為您跳轉...</p>
 			<div className="mt-4">
-				<Loader2 className="size-5 animate-spin text-text-muted" />
+				<Loader2 className="text-text-muted size-5 animate-spin" />
 			</div>
 		</div>
 	);
@@ -52,8 +52,8 @@ function AuthSuccessContent() {
 function LoadingFallback() {
 	return (
 		<div className="flex flex-col items-center justify-center py-8">
-			<Loader2 className="size-8 animate-spin text-action" />
-			<p className="text-sm text-text-secondary mt-4">載入中...</p>
+			<Loader2 className="text-action size-8 animate-spin" />
+			<p className="text-text-secondary mt-4 text-sm">載入中...</p>
 		</div>
 	);
 }

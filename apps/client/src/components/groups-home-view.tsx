@@ -97,7 +97,9 @@ export function GroupsHomeView({ friends, onOpenGroup }: GroupsHomeViewProps) {
 			return groups;
 		}
 
-		return groups.filter((group) => (group.name ?? '').toLowerCase().includes(normalizedSearchInput));
+		return groups.filter((group) =>
+			(group.name ?? '').toLowerCase().includes(normalizedSearchInput)
+		);
 	}, [groupSearchInput, groups]);
 
 	const handleGroupCreated = useCallback((createdGroup: Chat) => {
@@ -125,7 +127,11 @@ export function GroupsHomeView({ friends, onOpenGroup }: GroupsHomeViewProps) {
 						icon={<Search className="size-4" />}
 					/>
 				</div>
-				<Button type="button" icon={<Plus className="size-4" />} onClick={() => setIsCreateModalOpen(true)}>
+				<Button
+					type="button"
+					icon={<Plus className="size-4" />}
+					onClick={() => setIsCreateModalOpen(true)}
+				>
 					建立群組
 				</Button>
 			</div>

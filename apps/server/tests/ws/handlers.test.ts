@@ -2,9 +2,11 @@ import { beforeEach, describe, it, mock } from 'node:test';
 import assert from 'node:assert';
 
 const registeredHandlers = new Map<string, (...args: unknown[]) => Promise<void>>();
-const mockRegisterHandler = mock.fn((event: string, handler: (...args: unknown[]) => Promise<void>) => {
-	registeredHandlers.set(event, handler);
-});
+const mockRegisterHandler = mock.fn(
+	(event: string, handler: (...args: unknown[]) => Promise<void>) => {
+		registeredHandlers.set(event, handler);
+	}
+);
 const mockPrisma = {
 	conversationParticipant: {
 		findUnique: mock.fn(),

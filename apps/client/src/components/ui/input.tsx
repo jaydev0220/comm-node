@@ -20,7 +20,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 				{icon && (
 					<span
 						aria-hidden="true"
-						className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted size-4"
+						className="text-text-muted absolute top-1/2 left-3 size-4 -translate-y-1/2"
 					>
 						{icon}
 					</span>
@@ -28,26 +28,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 				<input
 					ref={ref}
 					type={inputType}
-					className={`
-						w-full h-10 px-3 ${icon ? 'pl-10' : ''} ${canTogglePassword ? 'pr-12' : ''} text-sm bg-surface border rounded-lg text-text-primary
-						placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background
-						disabled:opacity-50 disabled:cursor-not-allowed
-						${
-							error
-								? 'border-destructive focus:ring-destructive/50'
-								: 'border-border focus:border-action focus:ring-action/50'
-						}
-						${className}
-					`}
+					className={`h-10 w-full px-3 ${icon ? 'pl-10' : ''} ${canTogglePassword ? 'pr-12' : ''} bg-surface text-text-primary placeholder:text-text-muted focus:ring-offset-background rounded-lg border text-sm transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+						error
+							? 'border-destructive focus:ring-destructive/50'
+							: 'border-border focus:border-action focus:ring-action/50'
+					} ${className} `}
 					{...props}
 				/>
 				{canTogglePassword && (
 					<button
 						type="button"
-						className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-r-lg
-											text-text-muted hover:text-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action/50
-											focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:[transition-property:color,transform]
-											motion-safe:duration-200 motion-safe:hover:scale-105"
+						className="text-text-muted hover:text-action focus-visible:ring-action/50 focus-visible:ring-offset-background absolute top-1/2 right-0 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-r-lg focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none motion-safe:[transition-property:color,transform] motion-safe:duration-200 motion-safe:hover:scale-105"
 						aria-label={isPasswordVisible ? '隱藏密碼' : '顯示密碼'}
 						aria-pressed={isPasswordVisible}
 						onClick={() => setIsPasswordVisible((visible) => !visible)}
