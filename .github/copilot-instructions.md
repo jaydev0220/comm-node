@@ -26,8 +26,6 @@ root/
   └── README.md
 ```
 
-For more detailed structure, use `dir-structure` skill.
-
 ## Action Rules
 
 - **No guessing:** State unknowns explicitly. Never assume undocumented behavior.
