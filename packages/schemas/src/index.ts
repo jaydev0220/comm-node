@@ -21,6 +21,7 @@ export {
 	refreshResponseSchema,
 	friendRequestActionSchema,
 	googleCompleteRequestSchema,
+	changePasswordRequestSchema,
 	type RegisterStartRequest,
 	type RegisterCompleteRequest,
 	type RegisterRequest,
@@ -29,15 +30,18 @@ export {
 	type RefreshResponse,
 	type FriendRequestAction,
 	type GoogleCompleteRequest,
+	type ChangePasswordRequest,
 } from "./auth.js";
 
 // User schemas
 export {
+	authMethodSchema,
 	userSchema,
 	avatarMimeTypeSchema,
 	avatarUploadSchema,
 	updateUserRequestSchema,
 	userSearchParamsSchema,
+	type AuthMethod,
 	type User,
 	type AvatarMimeType,
 	type AvatarUpload,

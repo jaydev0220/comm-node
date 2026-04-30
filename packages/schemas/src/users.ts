@@ -1,11 +1,14 @@
 import { z } from "zod";
 
+export const authMethodSchema = z.enum(['password', 'google']);
+
 export const userSchema = z.object({
   id: z.uuid(),
   email: z.email(),
   username: z.string(),
   displayName: z.string(),
   avatarUrl: z.url().optional(),
+  authMethods: z.array(authMethodSchema).default([]),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
@@ -46,6 +49,7 @@ export const userSearchParamsSchema = z.object({
 });
 
 // Types
+export type AuthMethod = z.infer<typeof authMethodSchema>;
 export type User = z.infer<typeof userSchema>;
 export type AvatarMimeType = z.infer<typeof avatarMimeTypeSchema>;
 export type AvatarUpload = z.infer<typeof avatarUploadSchema>;

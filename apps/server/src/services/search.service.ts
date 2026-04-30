@@ -7,6 +7,7 @@ const formatUser = (user: {
 	username: string;
 	displayName: string;
 	avatarUrl: string | null;
+	passwordHash?: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 }): User => ({
@@ -15,6 +16,7 @@ const formatUser = (user: {
 	username: user.username,
 	displayName: user.displayName,
 	avatarUrl: user.avatarUrl ?? undefined,
+	authMethods: user.passwordHash ? ['password'] : [],
 	createdAt: user.createdAt.toISOString(),
 	updatedAt: user.updatedAt.toISOString()
 });

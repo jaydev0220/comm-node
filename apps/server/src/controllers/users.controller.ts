@@ -1,6 +1,8 @@
 import type { RequestHandler } from 'express';
-import type { UpdateUserRequest, UserSearchParams } from '@packages/schemas';
+import type { ChangePasswordRequest, UpdateUserRequest, UserSearchParams } from '@packages/schemas';
 import * as usersService from '../services/users.service.js';
+import { verifyUserPassword } from '../services/auth.service.js';
+import { hashPassword } from '../lib/password.js';
 import { errors } from '../middleware/error-handler.js';
 
 export const getMe: RequestHandler = async (req, res) => {
@@ -32,6 +34,20 @@ export const uploadMeAvatar: RequestHandler = async (req, res) => {
 
 export const deleteMe: RequestHandler = async (req, res) => {
 	await usersService.deleteUser(req.user!.sub);
+	res.status(204).send();
+};
+
+export const changePassword: RequestHandler = async (req, res) => {
+	const { currentPassword, newPassword } = req.body as ChangePasswordRequest;
+	const valid = await verifyUserPassword(req.user!.sub, currentPassword);
+
+	if (!valid) {
+		throw errors.unauthorized('目前密碼錯誤');
+	}
+
+	const hash = await hashPassword(newPassword);
+
+	await usersService.updateUserPassword(req.user!.sub, hash);
 	res.status(204).send();
 };
 

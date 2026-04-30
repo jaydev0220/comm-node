@@ -3,7 +3,7 @@
 import { Camera, ImagePlus } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import { Button, FormField, Input } from '@/components/ui';
+import { Button, FormField, Input, Separator } from '@/components/ui';
 import { api, getApiUrl, getAssetUrl } from '@/lib/api';
 import type { User } from '@/lib/api-types';
 
@@ -17,6 +17,13 @@ interface ValidationErrors {
 	username?: string;
 	displayName?: string;
 	avatar?: string;
+	general?: string;
+}
+
+interface PasswordErrors {
+	current?: string;
+	new?: string;
+	confirm?: string;
 	general?: string;
 }
 
@@ -90,6 +97,12 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 	const [errors, setErrors] = useState<ValidationErrors>({});
 	const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
+	const [currentPassword, setCurrentPassword] = useState('');
+	const [newPassword, setNewPassword] = useState('');
+	const [confirmPassword, setConfirmPassword] = useState('');
+	const [passwordErrors, setPasswordErrors] = useState<PasswordErrors>({});
+	const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+	const [isChangingPassword, setIsChangingPassword] = useState(false);
 
 	useEffect(() => {
 		setUsername(user.username);
@@ -98,6 +111,11 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 		setAvatarFile(null);
 		setSaveSuccess(null);
 		setErrors({});
+		setCurrentPassword('');
+		setNewPassword('');
+		setConfirmPassword('');
+		setPasswordErrors({});
+		setPasswordSuccess(null);
 		setAvatarPreviewUrl((currentPreviewUrl) => {
 			if (currentPreviewUrl?.startsWith('blob:')) {
 				URL.revokeObjectURL(currentPreviewUrl);
@@ -105,7 +123,7 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 
 			return null;
 		});
-	}, [user.avatarUrl, user.displayName, user.username]);
+	}, [user.avatarUrl, user.displayName, user.username, user.authMethods]);
 
 	useEffect(
 		() => () => {
@@ -125,7 +143,10 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 	const normalizedDisplayName = displayName.trim();
 	const hasTextChanges =
 		normalizedUsername !== user.username || normalizedDisplayName !== user.displayName;
-	const hasUnsavedChanges = hasTextChanges || avatarFile !== null;
+	const hasUnsavedProfileChanges = hasTextChanges || avatarFile !== null;
+	const hasPasswordAuth = user.authMethods?.includes('password') === true;
+	const passwordFormDirty =
+		currentPassword.length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
 
 	const handleAvatarPickerOpen = () => {
 		if (isSaving) {
@@ -209,6 +230,11 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 		setUsername(user.username);
 		setDisplayName(user.displayName);
 		setAvatarFile(null);
+		setCurrentPassword('');
+		setNewPassword('');
+		setConfirmPassword('');
+		setPasswordErrors({});
+		setPasswordSuccess(null);
 		setSaveSuccess(null);
 		setErrors({});
 		setAvatarPreviewUrl((currentPreviewUrl) => {
@@ -297,6 +323,51 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 		}
 	};
 
+	const handleChangePassword = async () => {
+		const errs: PasswordErrors = {};
+
+		if (!currentPassword) errs.current = '請輸入目前密碼';
+		if (!newPassword) errs.new = '請輸入新密碼';
+		else if (newPassword.length < 8) errs.new = '新密碼至少需要 8 個字元';
+		else if (newPassword.length > 128) errs.new = '新密碼不能超過 128 個字元';
+		if (newPassword !== confirmPassword) errs.confirm = '確認密碼與新密碼不符';
+		if (Object.keys(errs).length > 0) {
+			setPasswordErrors(errs);
+			return;
+		}
+
+		setIsChangingPassword(true);
+		setPasswordErrors({});
+		setPasswordSuccess(null);
+
+		try {
+			const response = await fetch(getApiUrl('/users/me/password'), {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json',
+					...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+				},
+				body: JSON.stringify({ currentPassword, newPassword }),
+				credentials: 'include'
+			});
+
+			if (!response.ok) {
+				const msg = await getResponseErrorMessage(response, '密碼變更失敗，請稍後再試');
+				setPasswordErrors({ general: msg });
+				return;
+			}
+
+			setCurrentPassword('');
+			setNewPassword('');
+			setConfirmPassword('');
+			setPasswordSuccess('密碼已成功變更');
+		} catch (err) {
+			setPasswordErrors({ general: getErrorMessage(err, '密碼變更失敗，請稍後再試') });
+		} finally {
+			setIsChangingPassword(false);
+		}
+	};
+
 	return (
 		<div className="flex h-full w-full justify-center overflow-hidden">
 			<div className="flex h-full w-full max-w-5xl p-8">
@@ -356,84 +427,163 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 					) : null}
 				</div>
 
-				<section className="relative min-h-0 grow">
+				<section className="invisible-scroll-y relative min-h-0 max-w-3xl grow px-4 pb-12">
 					<form
 						onSubmit={(event) => {
 							event.preventDefault();
 							void handleSave();
 						}}
-						className="h-full"
 					>
-						<div className="invisible-scroll-y h-full overflow-y-auto px-4 pb-12">
-							<div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-								<h1 className="text-text-primary text-2xl font-semibold">個人檔案設定</h1>
+						<div className="mx-auto flex w-full flex-col gap-6">
+							<h1 className="text-text-primary text-xl font-semibold">個人檔案設定</h1>
 
-								{errors.general ? (
-									<div className="bg-destructive-subtle text-destructive rounded-lg px-4 py-3 text-sm">
-										{errors.general}
-									</div>
-								) : null}
+							{errors.general ? (
+								<div className="bg-destructive-subtle text-destructive rounded-lg px-4 py-3 text-sm">
+									{errors.general}
+								</div>
+							) : null}
 
-								{saveSuccess ? (
-									<div className="bg-success-subtle text-success rounded-lg px-4 py-3 text-sm">
-										{saveSuccess}
-									</div>
-								) : null}
+							{saveSuccess ? (
+								<div className="bg-success-subtle text-success rounded-lg px-4 py-3 text-sm">
+									{saveSuccess}
+								</div>
+							) : null}
 
-								<FormField
-									label="使用者名稱"
-									htmlFor="profile-username"
-									error={errors.username}
-									description="長度 3~32 個字。僅接受小寫字母、數字、底線的組合。"
-									required
-								>
-									<Input
-										id="profile-username"
-										type="text"
-										value={username}
-										onChange={(event) => setUsername(event.target.value)}
-										autoComplete="username"
-										error={Boolean(errors.username)}
-										disabled={isSaving}
-									/>
-								</FormField>
+							<FormField
+								label="使用者名稱"
+								htmlFor="profile-username"
+								error={errors.username}
+								description="長度 3~32 個字。僅接受小寫字母、數字、底線的組合。"
+								required
+							>
+								<Input
+									id="profile-username"
+									type="text"
+									value={username}
+									onChange={(event) => setUsername(event.target.value)}
+									autoComplete="username"
+									error={Boolean(errors.username)}
+									disabled={isSaving}
+								/>
+							</FormField>
 
-								<FormField
-									label="顯示名稱"
-									htmlFor="profile-display-name"
-									error={errors.displayName}
-									description="其他使用者看見的名稱。"
-									required
-								>
-									<Input
-										id="profile-display-name"
-										type="text"
-										value={displayName}
-										onChange={(event) => setDisplayName(event.target.value)}
-										autoComplete="name"
-										error={Boolean(errors.displayName)}
-										disabled={isSaving}
-									/>
-								</FormField>
-							</div>
+							<FormField
+								label="顯示名稱"
+								htmlFor="profile-display-name"
+								error={errors.displayName}
+								description="其他使用者看見的名稱。"
+								required
+							>
+								<Input
+									id="profile-display-name"
+									type="text"
+									value={displayName}
+									onChange={(event) => setDisplayName(event.target.value)}
+									autoComplete="name"
+									error={Boolean(errors.displayName)}
+									disabled={isSaving}
+								/>
+							</FormField>
 						</div>
 
-						<div className="absolute right-0 bottom-0 left-0">
-							<div className="mx-auto flex w-full max-w-3xl items-center justify-end gap-3">
-								<Button
-									type="button"
-									variant="secondary"
-									onClick={handleDiscard}
-									disabled={!hasUnsavedChanges || isSaving}
-								>
-									捨棄
-								</Button>
-								<Button type="submit" loading={isSaving} disabled={!hasUnsavedChanges}>
-									保存
-								</Button>
-							</div>
+						<div className="mx-auto mt-2 flex w-full items-center justify-end gap-3">
+							<Button
+								type="button"
+								variant="secondary"
+								onClick={handleDiscard}
+								disabled={!hasUnsavedProfileChanges || isSaving}
+							>
+								捨棄
+							</Button>
+							<Button type="submit" loading={isSaving} disabled={!hasUnsavedProfileChanges}>
+								保存
+							</Button>
 						</div>
 					</form>
+
+					{hasPasswordAuth && (
+						<>
+							<Separator />
+
+							<form
+								onSubmit={(event) => {
+									event.preventDefault();
+									void handleChangePassword();
+								}}
+							>
+								<div className="mx-auto flex w-full flex-col gap-6">
+									<h1 className="text-text-primary text-xl font-semibold">修改密碼</h1>
+
+									<FormField
+										label="目前密碼"
+										htmlFor="current-password"
+										error={passwordErrors.current}
+										description="輸入目前的密碼"
+										required
+									>
+										<Input
+											id="current-password"
+											type="password"
+											showPasswordToggle
+											value={currentPassword}
+											onChange={(e) => setCurrentPassword(e.target.value)}
+											autoComplete="current-password"
+											disabled={isChangingPassword}
+										/>
+									</FormField>
+
+									<FormField
+										label="新密碼"
+										htmlFor="new-password"
+										error={passwordErrors.new}
+										description="長度 8~128 個字元"
+										required
+									>
+										<Input
+											id="new-password"
+											type="password"
+											showPasswordToggle
+											value={newPassword}
+											onChange={(e) => setNewPassword(e.target.value)}
+											autoComplete="new-password"
+											disabled={isChangingPassword}
+										/>
+									</FormField>
+
+									<FormField
+										label="確認新密碼"
+										htmlFor="confirm-password"
+										error={passwordErrors.confirm}
+										description="重新輸入一次新密碼"
+										required
+									>
+										<Input
+											id="confirm-password"
+											type="password"
+											showPasswordToggle
+											value={confirmPassword}
+											onChange={(e) => setConfirmPassword(e.target.value)}
+											autoComplete="new-password"
+											disabled={isChangingPassword}
+										/>
+									</FormField>
+
+									{passwordErrors.general ? (
+										<p className="text-destructive text-sm">{passwordErrors.general}</p>
+									) : null}
+									{passwordSuccess ? (
+										<p className="text-success text-sm">{passwordSuccess}</p>
+									) : null}
+								</div>
+
+								<div className="mx-auto mt-2 flex w-full items-center justify-end">
+									<Button type="submit" loading={isChangingPassword} disabled={!passwordFormDirty}>
+										確認變更
+									</Button>
+								</div>
+							</form>
+						</>
+					)}
 				</section>
 			</div>
 		</div>

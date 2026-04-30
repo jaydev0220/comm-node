@@ -3,7 +3,20 @@ import { errors } from '../middleware/error-handler.js';
 import type { User, UpdateUserRequest, UserSearchParams, OffsetPage } from '@packages/schemas';
 
 export const findById = async (id: string): Promise<User | null> => {
-	const user = await prisma.user.findUnique({ where: { id } });
+	const user = await prisma.user.findUnique({
+		where: { id },
+		select: {
+			id: true,
+			email: true,
+			username: true,
+			displayName: true,
+			avatarUrl: true,
+			passwordHash: true,
+			oauthAccounts: { select: { id: true } },
+			createdAt: true,
+			updatedAt: true
+		}
+	});
 	return user ? formatUser(user) : null;
 };
 
@@ -26,7 +39,8 @@ export const updateUser = async (id: string, data: UpdateUserRequest): Promise<U
 
 	const user = await prisma.user.update({
 		where: { id },
-		data: updateData
+		data: updateData,
+		include: { oauthAccounts: { select: { id: true } } }
 	});
 	return formatUser(user);
 };
@@ -34,13 +48,18 @@ export const updateUser = async (id: string, data: UpdateUserRequest): Promise<U
 export const updateUserAvatar = async (id: string, avatarUrl: string): Promise<User> => {
 	const user = await prisma.user.update({
 		where: { id },
-		data: { avatarUrl }
+		data: { avatarUrl },
+		include: { oauthAccounts: { select: { id: true } } }
 	});
 	return formatUser(user);
 };
 
 export const deleteUser = async (id: string): Promise<void> => {
 	await prisma.user.delete({ where: { id } });
+};
+
+export const updateUserPassword = async (id: string, hash: string): Promise<void> => {
+	await prisma.user.update({ where: { id }, data: { passwordHash: hash } });
 };
 
 export const searchUsers = async (
@@ -80,6 +99,7 @@ const formatUser = (user: {
 	username: string;
 	displayName: string;
 	avatarUrl: string | null;
+	passwordHash: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 }): User => ({
@@ -88,6 +108,7 @@ const formatUser = (user: {
 	username: user.username,
 	displayName: user.displayName,
 	avatarUrl: user.avatarUrl ?? undefined,
+	authMethods: user.passwordHash ? ['password'] : [],
 	createdAt: user.createdAt.toISOString(),
 	updatedAt: user.updatedAt.toISOString()
 });

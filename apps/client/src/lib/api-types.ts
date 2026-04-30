@@ -4,6 +4,7 @@ export interface User {
 	username: string;
 	displayName: string;
 	avatarUrl?: string;
+	authMethods?: ('password' | 'google')[];
 	createdAt: string;
 	updatedAt: string;
 }

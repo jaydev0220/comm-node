@@ -28,6 +28,7 @@ const formatUser = (user: {
 	username: string;
 	displayName: string;
 	avatarUrl: string | null;
+	passwordHash: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 }): User => ({
@@ -36,6 +37,7 @@ const formatUser = (user: {
 	username: user.username,
 	displayName: user.displayName,
 	avatarUrl: user.avatarUrl ?? undefined,
+	authMethods: user.passwordHash ? ['password'] : [],
 	createdAt: user.createdAt.toISOString(),
 	updatedAt: user.updatedAt.toISOString()
 });
@@ -134,7 +136,10 @@ export const completeEmailRegistration = async (
 export const loginUser = async (
 	data: LoginRequest
 ): Promise<{ user: User; accessToken: string; refreshToken: string }> => {
-	const user = await prisma.user.findUnique({ where: { email: data.email } });
+	const user = await prisma.user.findUnique({
+		where: { email: data.email },
+		include: { oauthAccounts: { select: { id: true } } }
+	});
 
 	if (!user || !user.passwordHash) {
 		throw errors.unauthorized('Invalid email or password');
@@ -194,6 +199,18 @@ export const logoutUser = async (refreshToken: string): Promise<void> => {
 	await prisma.refreshToken.deleteMany({ where: { tokenHash } });
 };
 
+export const verifyUserPassword = async (userId: string, password: string): Promise<boolean> => {
+	const user = await prisma.user.findUnique({
+		where: { id: userId },
+		select: { passwordHash: true }
+	});
+
+	if (!user?.passwordHash) {
+		return false;
+	}
+	return verifyPassword(password, user.passwordHash);
+};
+
 // ─── Google OAuth ────────────────────────────────────────
 
 export type GoogleCallbackResult =
@@ -218,6 +235,7 @@ const issueTokensForUser = async (user: {
 	username: string;
 	displayName: string;
 	avatarUrl: string | null;
+	passwordHash: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 }): Promise<{ user: User; accessToken: string; refreshToken: string }> => {

@@ -64,3 +64,13 @@ export type AuthResponse = z.infer<typeof authResponseSchema>;
 export type RefreshResponse = z.infer<typeof refreshResponseSchema>;
 export type FriendRequestAction = z.infer<typeof friendRequestActionSchema>;
 export type GoogleCompleteRequest = z.infer<typeof googleCompleteRequestSchema>;
+export const changePasswordRequestSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(128),
+}).refine((d) => d.currentPassword !== d.newPassword, {
+  message: '新密碼不可與目前密碼相同',
+  path: ['newPassword'],
+});
+
+export type ChangePasswordRequest = z.infer<typeof changePasswordRequestSchema>;
+
