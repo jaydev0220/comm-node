@@ -11,7 +11,7 @@ A real-time communication platform with email/Google authentication, friend mana
 - Chats support direct conversations, group creation, group browsing/search, group metadata updates, participant management, and read-only REST history fetches.
 - Message send/edit/delete mutations are handled by WebSocket events; REST exposes message history only.
 - File uploads create pending attachment records that can be claimed by `message:send`.
-- Notifications support unread lists/counts, read/read-all endpoints, and WebSocket push/sync events.
+- Notifications support unread lists/counts, conversation-aware message badges, read/read-all endpoints, and WebSocket push/sync events.
 
 ## Documentation
 
@@ -26,6 +26,12 @@ A real-time communication platform with email/Google authentication, friend mana
 - GROUP admins cannot delete arbitrary messages
 - Message sends, edits, and deletes use websocket events with client-generated `requestId` values and `ack`/`error` responses.
 - Client message bubbles reveal an actions menu (`複製訊息`, `編輯訊息`, `移除訊息`) on hover, with edit/delete options gated by sender ownership and group-owner delete scope.
+
+## Notifications
+
+- Message notifications are persisted unread rows with sender and conversation context, then pushed to online users through `notification:new`.
+- Opening a DM or group chat marks matching unread message notifications as read and syncs all connected clients through `notification:cleared`.
+- Friend request badges are driven by unresolved pending requests and clear after all requests are accepted or rejected.
 
 ## Tech Stack
 

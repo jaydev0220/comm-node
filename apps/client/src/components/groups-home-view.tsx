@@ -10,6 +10,7 @@ import type { Chat, CursorPage, FriendWithPresence } from '@/lib/api-types';
 
 interface GroupsHomeViewProps {
 	friends: FriendWithPresence[];
+	unreadGroupIds: ReadonlySet<string>;
 	onOpenGroup: (groupId: string) => void;
 }
 
@@ -44,7 +45,7 @@ const sortGroupsByUpdatedAt = (groups: Chat[]): Chat[] =>
 		return secondGroupTime - firstGroupTime;
 	});
 
-export function GroupsHomeView({ friends, onOpenGroup }: GroupsHomeViewProps) {
+export function GroupsHomeView({ friends, unreadGroupIds, onOpenGroup }: GroupsHomeViewProps) {
 	const [groups, setGroups] = useState<Chat[]>([]);
 	const [groupSearchInput, setGroupSearchInput] = useState('');
 	const [isLoadingGroups, setIsLoadingGroups] = useState(true);
@@ -152,6 +153,7 @@ export function GroupsHomeView({ friends, onOpenGroup }: GroupsHomeViewProps) {
 						) : null}
 						<GroupsGrid
 							groups={filteredGroups}
+							unreadGroupIds={unreadGroupIds}
 							onOpenGroup={onOpenGroup}
 							onCreateGroup={() => setIsCreateModalOpen(true)}
 						/>

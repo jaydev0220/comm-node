@@ -89,3 +89,21 @@ export interface Chat {
 	createdAt: string;
 	updatedAt: string;
 }
+
+export type AppNotificationType = 'NEW_MESSAGE' | 'FRIEND_REQUEST';
+
+export interface AppNotification {
+	id: string;
+	type: AppNotificationType;
+	referenceId: string;
+	actorId: string | null;
+	conversationId: string | null;
+	conversationType: Chat['type'] | null;
+	read: boolean;
+	createdAt: string;
+}
+
+export interface NotificationsResponse {
+	data: AppNotification[];
+	pagination: OffsetPage;
+}

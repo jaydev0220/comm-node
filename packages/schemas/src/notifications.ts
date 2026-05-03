@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { conversationTypeSchema } from "./chats.js";
 import { offsetPageSchema } from "./common.js";
 
 export const notificationTypeSchema = z.enum(["NEW_MESSAGE", "FRIEND_REQUEST"]);
@@ -7,6 +8,9 @@ export const notificationSchema = z.object({
 	id: z.uuid(),
 	type: notificationTypeSchema,
 	referenceId: z.uuid(),
+	actorId: z.uuid().nullable(),
+	conversationId: z.uuid().nullable(),
+	conversationType: conversationTypeSchema.nullable(),
 	read: z.boolean(),
 	createdAt: z.iso.datetime(),
 });

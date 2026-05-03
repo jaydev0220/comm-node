@@ -24,6 +24,7 @@ interface HomeViewProps {
 	friendStatusFilter: FriendStatusFilter;
 	listError: string | null;
 	filteredFriends: FriendWithPresence[];
+	unreadDmFriendIds: ReadonlySet<string>;
 	openFriendMenuId: string | null;
 	friendActionState: {
 		friendId: string;
@@ -61,6 +62,7 @@ export function HomeView({
 	friendStatusFilter,
 	listError,
 	filteredFriends,
+	unreadDmFriendIds,
 	openFriendMenuId,
 	friendActionState,
 	friendActionError,
@@ -206,7 +208,15 @@ export function HomeView({
 								key={friend.id}
 								className="border-border bg-surface flex w-full items-center gap-2 rounded-lg border p-2"
 							>
-								<Avatar name={friend.displayName} avatarUrl={friend.avatarUrl} size="md" />
+								<div className="relative shrink-0">
+									<Avatar name={friend.displayName} avatarUrl={friend.avatarUrl} size="md" />
+									{unreadDmFriendIds.has(friend.id) ? (
+										<span
+											aria-hidden="true"
+											className="absolute top-0 right-0 size-2.5 rounded-full bg-red-500 ring-2 ring-surface"
+										/>
+									) : null}
+								</div>
 								<div className="flex min-w-0 grow items-end gap-1">
 									<span className="truncate">{friend.displayName}</span>
 									<span className="text-text-muted truncate text-sm">({friend.username})</span>

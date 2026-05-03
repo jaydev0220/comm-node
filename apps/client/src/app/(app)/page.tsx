@@ -17,10 +17,12 @@ import {
 	type NotificationNewPayload
 } from '@/lib/use-notification-listener';
 import type {
+	AppNotification,
 	FriendRequestsResponse,
 	FriendsResponse,
 	Friendship,
 	FriendWithPresence,
+	NotificationsResponse,
 	SearchUsersResponse
 } from '@/lib/api-types';
 import { Separator } from '@/components/ui';
@@ -36,9 +38,19 @@ interface FriendRequestToast {
 }
 
 const FRIEND_REQUEST_TOAST_DURATION_MS = 5000;
+const NOTIFICATIONS_PAGE_LIMIT = 50;
 
 const getFriends = (): Promise<FriendsResponse> => api.get('/friends');
 const getPendingRequests = (): Promise<FriendRequestsResponse> => api.get('/friends/requests');
+
+const UnreadDot = ({ className = '' }: { className?: string }) => (
+	<span
+		aria-hidden="true"
+		className={`absolute size-3 rounded-full bg-red-500 ring-2 ring-surface ${
+			className || 'top-0 right-0'
+		}`}
+	/>
+);
 
 const getErrorMessage = (error: unknown): string => {
 	if (typeof error === 'object' && error && 'message' in error) {
@@ -68,6 +80,7 @@ export default function AppPage() {
 	const [friends, setFriends] = useState<FriendWithPresence[]>([]);
 	const [pendingRequests, setPendingRequests] = useState<Friendship[]>([]);
 	const [friendRequestToasts, setFriendRequestToasts] = useState<FriendRequestToast[]>([]);
+	const [unreadNotifications, setUnreadNotifications] = useState<AppNotification[]>([]);
 	const [pageState, setPageState] = useState<PageState>('home');
 	const [friendSearchInput, setFriendSearchInput] = useState('');
 	const [friendStatusFilter, setFriendStatusFilter] = useState<FriendStatusFilter>('all');
@@ -111,12 +124,112 @@ export default function AppPage() {
 		}
 	}, [user?.id]);
 
+	const loadUnreadNotifications = useCallback(async () => {
+		if (!user?.id) {
+			return;
+		}
+
+		try {
+			const loadedNotifications: AppNotification[] = [];
+			let page = 1;
+
+			while (true) {
+				const searchParams = new URLSearchParams({
+					page: String(page),
+					limit: String(NOTIFICATIONS_PAGE_LIMIT)
+				});
+				const response = await api.get<NotificationsResponse>(
+					`/notifications?${searchParams.toString()}`
+				);
+
+				loadedNotifications.push(...response.data);
+
+				if (!response.pagination.hasMore) {
+					break;
+				}
+
+				page += 1;
+			}
+
+			setUnreadNotifications(loadedNotifications);
+		} catch {
+			setUnreadNotifications([]);
+		}
+	}, [user?.id]);
+
 	useEffect(() => {
 		void loadFriendData();
 	}, [loadFriendData]);
 
+	useEffect(() => {
+		void loadUnreadNotifications();
+	}, [loadUnreadNotifications]);
+
+	const markNotificationsRead = useCallback(
+		async (notificationIds: string[]) => {
+			if (!user?.id) {
+				return;
+			}
+
+			const uniqueNotificationIds = [...new Set(notificationIds)];
+
+			if (uniqueNotificationIds.length === 0) {
+				return;
+			}
+
+			try {
+				await api.post<void>('/notifications/read', { ids: uniqueNotificationIds });
+				const readNotificationIds = new Set(uniqueNotificationIds);
+
+				setUnreadNotifications((currentNotifications) =>
+					currentNotifications.filter((notification) => !readNotificationIds.has(notification.id))
+				);
+			} catch {
+				// Keep unread state intact if the server cannot confirm the read transition.
+			}
+		},
+		[user?.id]
+	);
+
+	const isMessageNotificationForActiveView = useCallback(
+		(
+			notification: Pick<
+				AppNotification,
+				'type' | 'actorId' | 'conversationId' | 'conversationType'
+			>
+		): boolean => {
+			if (notification.type !== 'NEW_MESSAGE') {
+				return false;
+			}
+
+			if (notification.conversationType === 'DIRECT') {
+				return pageState === 'dm' && notification.actorId === selectedDmFriendId;
+			}
+
+			if (notification.conversationType === 'GROUP') {
+				return pageState === 'group' && notification.conversationId === selectedGroupId;
+			}
+
+			return false;
+		},
+		[pageState, selectedDmFriendId, selectedGroupId]
+	);
+
 	const handleRealtimeNotification = useCallback(
 		(payload: NotificationNewPayload) => {
+			if (payload.type === 'NEW_MESSAGE' && isMessageNotificationForActiveView(payload)) {
+				void markNotificationsRead([payload.id]);
+				return;
+			}
+
+			setUnreadNotifications((currentNotifications) => {
+				if (currentNotifications.some((notification) => notification.id === payload.id)) {
+					return currentNotifications;
+				}
+
+				return [...currentNotifications, { ...payload, read: false }];
+			});
+
 			if (payload.type !== 'FRIEND_REQUEST') {
 				return;
 			}
@@ -137,10 +250,21 @@ export default function AppPage() {
 			});
 			void loadFriendData();
 		},
-		[loadFriendData]
+		[isMessageNotificationForActiveView, loadFriendData, markNotificationsRead]
 	);
 
 	const handleNotificationCleared = useCallback((payload: NotificationClearedPayload) => {
+		setUnreadNotifications((currentNotifications) => {
+			if (payload.ids.length === 0) {
+				return [];
+			}
+
+			const clearedNotificationIds = new Set(payload.ids);
+			return currentNotifications.filter(
+				(notification) => !clearedNotificationIds.has(notification.id)
+			);
+		});
+
 		setFriendRequestToasts((currentToasts) => {
 			if (payload.ids.length === 0) {
 				return [];
@@ -154,6 +278,16 @@ export default function AppPage() {
 	const handleFriendAccepted = useCallback(() => {
 		void loadFriendData();
 	}, [loadFriendData]);
+
+	useEffect(() => {
+		const visibleNotificationIds = unreadNotifications
+			.filter(isMessageNotificationForActiveView)
+			.map((notification) => notification.id);
+
+		if (visibleNotificationIds.length > 0) {
+			void markNotificationsRead(visibleNotificationIds);
+		}
+	}, [isMessageNotificationForActiveView, markNotificationsRead, unreadNotifications]);
 
 	useNotificationListener({
 		accessToken,
@@ -245,6 +379,38 @@ export default function AppPage() {
 		() => friends.find((friend) => friend.id === selectedDmFriendId) ?? null,
 		[friends, selectedDmFriendId]
 	);
+
+	const unreadDmFriendIds = useMemo(() => {
+		const friendIds = new Set<string>();
+
+		for (const notification of unreadNotifications) {
+			if (
+				notification.type === 'NEW_MESSAGE' &&
+				notification.conversationType === 'DIRECT' &&
+				notification.actorId
+			) {
+				friendIds.add(notification.actorId);
+			}
+		}
+
+		return friendIds;
+	}, [unreadNotifications]);
+
+	const unreadGroupIds = useMemo(() => {
+		const groupIds = new Set<string>();
+
+		for (const notification of unreadNotifications) {
+			if (
+				notification.type === 'NEW_MESSAGE' &&
+				notification.conversationType === 'GROUP' &&
+				notification.conversationId
+			) {
+				groupIds.add(notification.conversationId);
+			}
+		}
+
+		return groupIds;
+	}, [unreadNotifications]);
 
 	useEffect(() => {
 		if (!selectedDmFriendId) {
@@ -402,6 +568,7 @@ export default function AppPage() {
 			friendStatusFilter={friendStatusFilter}
 			listError={listError}
 			filteredFriends={filteredFriends}
+			unreadDmFriendIds={unreadDmFriendIds}
 			openFriendMenuId={openFriendMenuId}
 			friendActionState={friendActionState}
 			friendActionError={friendActionError}
@@ -435,7 +602,13 @@ export default function AppPage() {
 		return <DmView accessToken={accessToken} currentUser={user} friend={selectedDmFriend} />;
 	};
 
-	const renderGroupsHome = () => <GroupsHomeView friends={friends} onOpenGroup={handleOpenGroup} />;
+	const renderGroupsHome = () => (
+		<GroupsHomeView
+			friends={friends}
+			unreadGroupIds={unreadGroupIds}
+			onOpenGroup={handleOpenGroup}
+		/>
+	);
 
 	const renderGroupChat = () => {
 		if (!selectedGroupId || !accessToken) {
@@ -460,18 +633,20 @@ export default function AppPage() {
 					<button
 						type="button"
 						aria-label="回到好友首頁"
-						className="border-border hover:bg-surface-raised flex aspect-square h-auto w-full cursor-pointer items-center justify-center rounded-full border"
+						className="border-border hover:bg-surface-raised relative flex aspect-square h-auto w-full cursor-pointer items-center justify-center rounded-full border"
 						onClick={() => setPageState('home')}
 					>
 						<House size={32} />
+						{pendingRequests.length > 0 ? <UnreadDot className="top-1 right-1" /> : null}
 					</button>
 					<button
 						type="button"
 						aria-label="進入群組首頁"
-						className="border-border hover:bg-surface-raised flex aspect-square h-auto w-full cursor-pointer items-center justify-center rounded-full border"
+						className="border-border hover:bg-surface-raised relative flex aspect-square h-auto w-full cursor-pointer items-center justify-center rounded-full border"
 						onClick={() => setPageState('groups-home')}
 					>
 						<Users size={32} />
+						{unreadGroupIds.size > 0 ? <UnreadDot className="top-1 right-1" /> : null}
 					</button>
 				</div>
 
@@ -480,8 +655,13 @@ export default function AppPage() {
 				<div className="invisible-scroll-y flex h-full min-h-0 w-full grow flex-col items-center">
 					<div className="flex flex-col gap-2">
 						{friends.map((friend) => (
-							<div key={friend.id} onClick={() => handleOpenDm(friend.id)}>
+							<div
+								key={friend.id}
+								className="relative"
+								onClick={() => handleOpenDm(friend.id)}
+							>
 								<Avatar name={friend.displayName} avatarUrl={friend.avatarUrl} size="lg" />
+								{unreadDmFriendIds.has(friend.id) ? <UnreadDot /> : null}
 							</div>
 						))}
 					</div>

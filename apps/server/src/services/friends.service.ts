@@ -1,7 +1,7 @@
 import { prisma } from '../lib/db.js';
 import { errors } from '../middleware/error-handler.js';
 import { getConnectedUserIds } from '../ws/connection.js';
-import { createNotification } from './notifications.service.js';
+import { createNotification, markUnreadByReference } from './notifications.service.js';
 import type { FriendWithPresence, User, Friendship } from '@packages/schemas';
 
 export const listFriends = async (userId: string): Promise<FriendWithPresence[]> => {
@@ -70,7 +70,7 @@ export const sendFriendRequest = async (
 		include: { requester: true, addressee: true }
 	});
 
-	await createNotification(addresseeId, 'FRIEND_REQUEST', friendship.id);
+	await createNotification(addresseeId, 'FRIEND_REQUEST', friendship.id, { actorId: requesterId });
 	return formatFriendship(friendship);
 };
 
@@ -90,6 +90,9 @@ export const respondToRequest = async (
 	if (friendship.status !== 'PENDING') {
 		throw errors.conflict('Request already processed');
 	}
+
+	await markUnreadByReference(userId, 'FRIEND_REQUEST', requestId);
+
 	if (action === 'reject') {
 		await prisma.friendship.delete({ where: { id: requestId } });
 		return null;

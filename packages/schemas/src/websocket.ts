@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { conversationTypeSchema } from "./chats.js";
 import { friendshipSchema } from "./friends.js";
 import { notificationTypeSchema } from "./notifications.js";
 
@@ -191,6 +192,9 @@ export const notificationNewPayloadSchema = z.object({
 	id: z.uuid(),
 	type: notificationTypeSchema,
 	referenceId: z.uuid(),
+	actorId: z.uuid().nullable(),
+	conversationId: z.uuid().nullable(),
+	conversationType: conversationTypeSchema.nullable(),
 	createdAt: z.iso.datetime(),
 });
 export type NotificationNewPayload = z.infer<typeof notificationNewPayloadSchema>;

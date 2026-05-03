@@ -10,6 +10,9 @@ export interface NotificationNewPayload {
 	id: string;
 	type: NotificationType;
 	referenceId: string;
+	actorId: string | null;
+	conversationId: string | null;
+	conversationType: 'DIRECT' | 'GROUP' | null;
 	createdAt: string;
 }
 
@@ -32,6 +35,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const isNotificationType = (value: unknown): value is NotificationType =>
 	value === 'NEW_MESSAGE' || value === 'FRIEND_REQUEST';
+
+const isConversationType = (value: unknown): value is NotificationNewPayload['conversationType'] =>
+	value === 'DIRECT' || value === 'GROUP' || value === null;
 
 const isFriendshipStatus = (value: unknown): value is Friendship['status'] =>
 	value === 'PENDING' || value === 'ACCEPTED' || value === 'BLOCKED';
@@ -74,18 +80,21 @@ const parseNotificationNewPayload = (value: unknown): NotificationNewPayload | n
 		return null;
 	}
 
-	const { id, type, referenceId, createdAt } = value;
+	const { id, type, referenceId, actorId, conversationId, conversationType, createdAt } = value;
 
 	if (
 		typeof id !== 'string' ||
 		!isNotificationType(type) ||
 		typeof referenceId !== 'string' ||
+		(actorId !== null && typeof actorId !== 'string') ||
+		(conversationId !== null && typeof conversationId !== 'string') ||
+		!isConversationType(conversationType) ||
 		typeof createdAt !== 'string'
 	) {
 		return null;
 	}
 
-	return { id, type, referenceId, createdAt };
+	return { id, type, referenceId, actorId, conversationId, conversationType, createdAt };
 };
 
 const parseNotificationClearedPayload = (value: unknown): NotificationClearedPayload | null => {

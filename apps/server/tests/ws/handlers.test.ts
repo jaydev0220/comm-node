@@ -94,7 +94,8 @@ describe('WS handlers', () => {
 				ogEmbed: null,
 				editedAt: null,
 				deletedAt: null,
-				createdAt: new Date('2024-01-01T00:00:00.000Z')
+				createdAt: new Date('2024-01-01T00:00:00.000Z'),
+				conversation: { type: 'DIRECT' }
 			};
 
 			mockMessagesService.getConversationParticipantRole.mock.mockImplementationOnce(() =>
@@ -130,8 +131,26 @@ describe('WS handlers', () => {
 			assert.deepStrictEqual(
 				mockCreateNotification.mock.calls.map((call) => call.arguments),
 				[
-					['recipient-1', 'NEW_MESSAGE', '733e4b9d-bf1b-4439-a094-1d4dd04f8f68'],
-					['recipient-2', 'NEW_MESSAGE', '733e4b9d-bf1b-4439-a094-1d4dd04f8f68']
+					[
+						'recipient-1',
+						'NEW_MESSAGE',
+						'733e4b9d-bf1b-4439-a094-1d4dd04f8f68',
+						{
+							actorId: 'sender-1',
+							conversationId: 'conversation-1',
+							conversationType: 'DIRECT'
+						}
+					],
+					[
+						'recipient-2',
+						'NEW_MESSAGE',
+						'733e4b9d-bf1b-4439-a094-1d4dd04f8f68',
+						{
+							actorId: 'sender-1',
+							conversationId: 'conversation-1',
+							conversationType: 'DIRECT'
+						}
+					]
 				]
 			);
 			assert.strictEqual(mockSendAck.mock.calls.length, 1);

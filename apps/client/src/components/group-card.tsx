@@ -3,6 +3,7 @@ import type { Chat } from '@/lib/api-types';
 
 interface GroupCardProps {
 	group: Chat;
+	hasUnread?: boolean;
 	onClick: () => void;
 }
 
@@ -11,13 +12,19 @@ const getGroupName = (group: Chat): string => {
 	return trimmedName && trimmedName.length > 0 ? trimmedName : '未命名群組';
 };
 
-export function GroupCard({ group, onClick }: GroupCardProps) {
+export function GroupCard({ group, hasUnread = false, onClick }: GroupCardProps) {
 	return (
 		<button
 			type="button"
 			onClick={onClick}
-			className="border-border bg-surface hover:bg-surface-raised mx-auto flex aspect-4/5 w-[88%] cursor-pointer flex-col overflow-hidden rounded-2xl border text-left transition-colors"
+			className="border-border bg-surface hover:bg-surface-raised relative mx-auto flex aspect-4/5 w-[88%] cursor-pointer flex-col overflow-hidden rounded-2xl border text-left transition-colors"
 		>
+			{hasUnread ? (
+				<span
+					aria-hidden="true"
+					className="absolute top-2 right-2 z-10 size-3 rounded-full bg-red-500 ring-2 ring-surface"
+				/>
+			) : null}
 			<div className="flex min-h-0 grow items-center justify-center px-3 py-3">
 				<GridAvatarStack
 					participants={group.participants}

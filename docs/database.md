@@ -21,10 +21,12 @@ User ──< Friendship (as requester)
 User ──< Friendship (as addressee)
 User ──< ConversationParticipant
 User ──< Message (as sender)
-User ──< Notification
+User ──< Notification (as recipient)
+User ──< Notification (as actor)
 
 Conversation ──< ConversationParticipant
 Conversation ──< Message
+Conversation ──< Notification
 
 Message ──< Attachment
 ```
@@ -122,16 +124,19 @@ Models all peer relationships: friend requests, accepted friends, and blocks. A 
 
 Per-user notification feed rows used for unread lists and badge counts.
 
-| Column      | Type             | Constraints                              | Notes                                                              |
-| ----------- | ---------------- | ---------------------------------------- | ------------------------------------------------------------------ |
-| id          | UUID             | PK, default uuid()                       |                                                                    |
-| userId      | UUID             | FK → [User.id](http://User.id) (CASCADE) | Notification recipient                                             |
-| type        | NotificationType | NOT NULL                                 | Enum: `NEW_MESSAGE`, `FRIEND_REQUEST`                              |
-| referenceId | UUID (String)    | NOT NULL                                 | `messageId` for `NEW_MESSAGE`; `friendshipId` for `FRIEND_REQUEST` |
-| read        | Boolean          | NOT NULL, default false                  |                                                                    |
-| createdAt   | DateTime         | default now()                            |                                                                    |
+| Column           | Type              | Constraints                                              | Notes                                                              |
+| ---------------- | ----------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
+| id               | UUID              | PK, default uuid()                                       |                                                                    |
+| userId           | UUID              | FK → [User.id](http://User.id) (CASCADE)                 | Notification recipient                                             |
+| type             | NotificationType  | NOT NULL                                                 | Enum: `NEW_MESSAGE`, `FRIEND_REQUEST`                              |
+| referenceId      | UUID (String)     | NOT NULL                                                 | `messageId` for `NEW_MESSAGE`; `friendshipId` for `FRIEND_REQUEST` |
+| actorId          | UUID?             | FK → [User.id](http://User.id) (SET NULL)                | Sender/requester that caused the notification                      |
+| conversationId   | UUID?             | FK → [Conversation.id](http://Conversation.id) (CASCADE) | Set for `NEW_MESSAGE` notifications                                |
+| conversationType | ConversationType? | nullable                                                 | `DIRECT` or `GROUP` for message badge routing                      |
+| read             | Boolean           | NOT NULL, default false                                  |                                                                    |
+| createdAt        | DateTime          | default now()                                            |                                                                    |
 
-**Indexes:** `(userId, read, createdAt DESC)` for unread list; `(userId, read, type)` for split unread counts
+**Indexes:** `(userId, read, createdAt DESC)` for unread list; `(userId, read, type)` for split unread counts; `(userId, read, conversationId)` for conversation badge clearing
 
 ### Enum: NotificationType
 
@@ -335,7 +340,8 @@ model User {
   receivedFriendships Friendship[]              @relation("Addressee")
   participations      ConversationParticipant[]
   messages            Message[]
-  notifications       Notification[]
+  notifications       Notification[]            @relation("NotificationRecipient")
+  actedNotifications  Notification[]            @relation("NotificationActor")
 }
 
 model OAuthAccount {
@@ -375,16 +381,22 @@ model Friendship {
 // ─── Notifications ───────────────────────────────────────
 
 model Notification {
-  id          String           @id @default(uuid())
-  userId      String
-  type        NotificationType
-  referenceId String
-  read        Boolean          @default(false)
-  createdAt   DateTime         @default(now())
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String            @id @default(uuid())
+  userId           String
+  type             NotificationType
+  referenceId      String
+  actorId          String?
+  conversationId   String?
+  conversationType ConversationType?
+  read             Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  user             User              @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor            User?             @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  conversation     Conversation?     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([userId, read, createdAt(sort: Desc)])
   @@index([userId, read, type])
+  @@index([userId, read, conversationId])
 }
 
 // ─── Conversations ───────────────────────────────────────
@@ -398,8 +410,9 @@ model Conversation {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
-  participants ConversationParticipant[]
-  messages     Message[]
+  participants  ConversationParticipant[]
+  messages      Message[]
+  notifications Notification[]
 }
 
 model ConversationParticipant {

@@ -376,6 +376,21 @@
             "format": "uuid",
             "description": "ID of the related resource: messageId for NEW_MESSAGE, friendshipId for FRIEND_REQUEST"
           },
+          "actorId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "Sender/requester that caused the notification"
+          },
+          "conversationId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "Conversation id for NEW_MESSAGE notifications"
+          },
+          "conversationType": {
+            "type": ["string", "null"],
+            "enum": ["DIRECT", "GROUP", null],
+            "description": "Conversation type for message badge routing"
+          },
           "read": {
             "type": "boolean"
           },

@@ -64,6 +64,9 @@ type NotificationBroadcastInput = {
 	id: string;
 	type: NotificationNewPayload['type'];
 	referenceId: string;
+	actorId: string | null;
+	conversationId: string | null;
+	conversationType: NotificationNewPayload['conversationType'];
 	createdAt: string | Date;
 };
 
@@ -73,6 +76,9 @@ export const formatNotificationForWs = (
 	id: notification.id,
 	type: notification.type,
 	referenceId: notification.referenceId,
+	actorId: notification.actorId,
+	conversationId: notification.conversationId,
+	conversationType: notification.conversationType,
 	createdAt:
 		typeof notification.createdAt === 'string'
 			? notification.createdAt

@@ -86,7 +86,10 @@ const handleMessageSend: WsMessageHandler = async (
 						avatarUrl: true
 					}
 				},
-				attachments: true
+				attachments: true,
+				conversation: {
+					select: { type: true }
+				}
 			}
 		});
 
@@ -106,7 +109,11 @@ const handleMessageSend: WsMessageHandler = async (
 
 		await Promise.all(
 			recipientIds.map((recipientId) =>
-				createNotification(recipientId, 'NEW_MESSAGE', newMessage.id)
+				createNotification(recipientId, 'NEW_MESSAGE', newMessage.id, {
+					actorId: socket.userId,
+					conversationId,
+					conversationType: newMessage.conversation.type
+				})
 			)
 		);
 

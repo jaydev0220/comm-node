@@ -16,13 +16,17 @@ const mockPrisma = {
 };
 const mockGetConnectedUserIds = createMockFunction();
 const mockCreateNotification = createMockFunction();
+const mockMarkUnreadByReference = createMockFunction();
 
 mock.module('../../src/lib/db.js', { namedExports: { prisma: mockPrisma } });
 mock.module('../../src/ws/connection.js', {
 	namedExports: { getConnectedUserIds: mockGetConnectedUserIds }
 });
 mock.module('../../src/services/notifications.service.js', {
-	namedExports: { createNotification: mockCreateNotification }
+	namedExports: {
+		createNotification: mockCreateNotification,
+		markUnreadByReference: mockMarkUnreadByReference
+	}
 });
 
 const { listFriends, sendFriendRequest } = await import('../../src/services/friends.service.js');
@@ -34,6 +38,7 @@ describe('Friends Service', () => {
 		mockPrisma.friendship.create.mock.resetCalls();
 		mockGetConnectedUserIds.mock.resetCalls();
 		mockCreateNotification.mock.resetCalls();
+		mockMarkUnreadByReference.mock.resetCalls();
 	});
 	describe('listFriends', () => {
 		it('should return friends with online presence', async () => {
@@ -136,6 +141,9 @@ describe('Friends Service', () => {
 					id: 'notification-1',
 					type: 'FRIEND_REQUEST',
 					referenceId: createdFriendship.id,
+					actorId: 'requester-1',
+					conversationId: null,
+					conversationType: null,
 					read: false,
 					createdAt: '2024-01-01T00:00:00.000Z'
 				})
@@ -162,7 +170,8 @@ describe('Friends Service', () => {
 			assert.deepStrictEqual(mockCreateNotification.mock.calls[0]?.arguments, [
 				'addressee-1',
 				'FRIEND_REQUEST',
-				'5af97f0d-62cc-4de6-8cd8-fad91a4e63f2'
+				'5af97f0d-62cc-4de6-8cd8-fad91a4e63f2',
+				{ actorId: 'requester-1' }
 			]);
 			assert.strictEqual(result.id, '5af97f0d-62cc-4de6-8cd8-fad91a4e63f2');
 		});

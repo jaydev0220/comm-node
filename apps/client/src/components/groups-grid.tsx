@@ -4,15 +4,26 @@ import { GroupCard } from '@/components/group-card';
 
 interface GroupsGridProps {
 	groups: Chat[];
+	unreadGroupIds: ReadonlySet<string>;
 	onOpenGroup: (groupId: string) => void;
 	onCreateGroup: () => void;
 }
 
-export function GroupsGrid({ groups, onOpenGroup, onCreateGroup }: GroupsGridProps) {
+export function GroupsGrid({
+	groups,
+	unreadGroupIds,
+	onOpenGroup,
+	onCreateGroup
+}: GroupsGridProps) {
 	return (
 		<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
 			{groups.map((group) => (
-				<GroupCard key={group.id} group={group} onClick={() => onOpenGroup(group.id)} />
+				<GroupCard
+					key={group.id}
+					group={group}
+					hasUnread={unreadGroupIds.has(group.id)}
+					onClick={() => onOpenGroup(group.id)}
+				/>
 			))}
 			<button
 				type="button"

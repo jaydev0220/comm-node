@@ -1,8 +1,10 @@
 import {
+	conversationTypeSchema,
 	listNotificationsParamsSchema,
 	markNotificationsReadRequestSchema,
 	notificationTypeSchema,
 	uuidSchema,
+	type ConversationType,
 	type ErrorDetail,
 	type ListNotificationsParams,
 	type MarkNotificationsReadRequest,
@@ -17,6 +19,11 @@ import { errors } from '../middleware/error-handler.js';
 import { broadcastNotificationCleared, broadcastNotificationNew } from '../ws/broadcast.js';
 
 type MarkAsReadInput = MarkNotificationsReadRequest | MarkNotificationsReadRequest['ids'] | string;
+type CreateNotificationOptions = {
+	actorId?: string | null;
+	conversationId?: string | null;
+	conversationType?: ConversationType | null;
+};
 
 const formatValidationDetails = (issues: ZodIssue[]): ErrorDetail[] =>
 	issues.map((issue) => ({
@@ -52,6 +59,28 @@ const parseReferenceId = (referenceId: string): string => {
 	return result.data;
 };
 
+const parseOptionalReferenceId = (referenceId: string | null | undefined): string | null => {
+	if (referenceId === undefined || referenceId === null) {
+		return null;
+	}
+	return parseReferenceId(referenceId);
+};
+
+const parseOptionalConversationType = (
+	conversationType: ConversationType | null | undefined
+): ConversationType | null => {
+	if (conversationType === undefined || conversationType === null) {
+		return null;
+	}
+
+	const result = conversationTypeSchema.safeParse(conversationType);
+
+	if (!result.success) {
+		throw errors.validationFailed(formatValidationDetails(result.error.issues));
+	}
+	return result.data;
+};
+
 const normalizeMarkAsReadIds = (input: MarkAsReadInput): string[] => {
 	if (typeof input === 'string') {
 		const parsedId = parseReferenceId(input);
@@ -71,12 +100,18 @@ const formatNotification = (notification: {
 	id: string;
 	type: NotificationType;
 	referenceId: string;
+	actorId: string | null;
+	conversationId: string | null;
+	conversationType: ConversationType | null;
 	read: boolean;
 	createdAt: Date;
 }): Notification => ({
 	id: notification.id,
 	type: notification.type,
 	referenceId: notification.referenceId,
+	actorId: notification.actorId,
+	conversationId: notification.conversationId,
+	conversationType: notification.conversationType,
 	read: notification.read,
 	createdAt: notification.createdAt.toISOString()
 });
@@ -165,6 +200,47 @@ export const markAsRead = async (userId: string, input: MarkAsReadInput): Promis
 	return updatedIds;
 };
 
+export const markUnreadByReference = async (
+	userId: string,
+	type: NotificationType,
+	referenceId: string
+): Promise<string[]> => {
+	const parsedType = parseNotificationType(type);
+	const parsedReferenceId = parseReferenceId(referenceId);
+	const updatedIds = await prisma.$transaction(async (tx) => {
+		const unreadRows = await tx.notification.findMany({
+			where: {
+				userId,
+				type: parsedType,
+				referenceId: parsedReferenceId,
+				read: false
+			},
+			select: { id: true }
+		});
+
+		if (unreadRows.length === 0) {
+			return [];
+		}
+
+		const ids = unreadRows.map((row) => row.id);
+
+		await tx.notification.updateMany({
+			where: {
+				userId,
+				id: { in: ids },
+				read: false
+			},
+			data: { read: true }
+		});
+		return ids;
+	});
+
+	if (updatedIds.length > 0) {
+		broadcastNotificationCleared(userId, updatedIds);
+	}
+	return updatedIds;
+};
+
 export const markAllAsRead = async (userId: string): Promise<void> => {
 	await prisma.notification.updateMany({
 		where: {
@@ -179,15 +255,33 @@ export const markAllAsRead = async (userId: string): Promise<void> => {
 export const createNotification = async (
 	userId: string,
 	type: NotificationType,
-	referenceId: string
+	referenceId: string,
+	options: CreateNotificationOptions = {}
 ): Promise<Notification> => {
 	const parsedType = parseNotificationType(type);
 	const parsedReferenceId = parseReferenceId(referenceId);
+	const actorId = parseOptionalReferenceId(options.actorId);
+	const conversationId = parseOptionalReferenceId(options.conversationId);
+	const conversationType = parseOptionalConversationType(options.conversationType);
+
+	if (parsedType === 'NEW_MESSAGE' && (!actorId || !conversationId || !conversationType)) {
+		throw errors.validationFailed([
+			{
+				field: 'notification',
+				code: 'custom',
+				message: 'Message notifications require actor and conversation context'
+			}
+		]);
+	}
+
 	const notification = await prisma.notification.create({
 		data: {
 			userId,
 			type: parsedType,
-			referenceId: parsedReferenceId
+			referenceId: parsedReferenceId,
+			actorId,
+			conversationId,
+			conversationType
 		}
 	});
 	const formattedNotification = formatNotification(notification);
