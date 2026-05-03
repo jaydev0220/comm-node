@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type SubmitEvent } from 'react';
 import { House, Users, X } from 'lucide-react';
+import { AccountActionsMenu } from '@/components/account-actions-menu';
 import Avatar from '@/components/avatar';
 import { DmView } from '@/components/dm-view';
 import { GroupChatView } from '@/components/group-chat-view';
@@ -63,7 +64,7 @@ const buildUserSearchQuery = (query: string): string => {
 };
 
 export default function AppPage() {
-	const { user, accessToken, reloadSession } = useAuthSession();
+	const { user, accessToken, reloadSession, clearAccessToken } = useAuthSession();
 	const [friends, setFriends] = useState<FriendWithPresence[]>([]);
 	const [pendingRequests, setPendingRequests] = useState<Friendship[]>([]);
 	const [friendRequestToasts, setFriendRequestToasts] = useState<FriendRequestToast[]>([]);
@@ -86,6 +87,7 @@ export default function AppPage() {
 		friendId: string;
 		action: FriendAction;
 	} | null>(null);
+	const [isLoggingOut, setIsLoggingOut] = useState(false);
 	const [selectedDmFriendId, setSelectedDmFriendId] = useState<string | null>(null);
 	const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 	const openMenuContainerRef = useRef<HTMLDivElement | null>(null);
@@ -361,6 +363,23 @@ export default function AppPage() {
 		setPageState('group');
 	}, []);
 
+	const handleLogout = async () => {
+		if (isLoggingOut) {
+			return;
+		}
+
+		setIsLoggingOut(true);
+
+		try {
+			await api.post<void>('/auth/logout', {});
+		} catch {
+			// Local sign-out still needs to complete if the server session is already unavailable.
+		} finally {
+			clearAccessToken();
+			setIsLoggingOut(false);
+		}
+	};
+
 	const dismissToast = (toastId: string) => {
 		setFriendRequestToasts((currentToasts) =>
 			currentToasts.filter((toast) => toast.id !== toastId)
@@ -436,7 +455,7 @@ export default function AppPage() {
 
 	return (
 		<div className="flex h-dvh w-dvw overflow-hidden">
-			<aside className="bg-surface border-border relative flex h-dvh w-20 flex-col overflow-hidden border-r p-3">
+			<aside className="bg-surface border-border relative flex h-dvh w-20 flex-col border-r p-3">
 				<div className="flex w-full flex-col gap-2">
 					<button
 						type="button"
@@ -469,14 +488,13 @@ export default function AppPage() {
 				</div>
 
 				<div className="flex aspect-square w-full items-center justify-center">
-					<button
-						type="button"
-						onClick={() => setPageState('profile')}
-						aria-label="開啟個人設定"
-						className="rounded-full"
-					>
-						<Avatar name={user.displayName} avatarUrl={user.avatarUrl} size="lg" />
-					</button>
+					<AccountActionsMenu
+						displayName={user.displayName}
+						avatarUrl={user.avatarUrl}
+						isLogoutPending={isLoggingOut}
+						onOpenSettings={() => setPageState('profile')}
+						onLogout={handleLogout}
+					/>
 				</div>
 			</aside>
 
