@@ -9,24 +9,25 @@ import {
 	createMockRequest,
 	createMockResponse,
 	createMockUser,
+	createMockFunction,
 	type MockResponse
 } from '../setup.js';
 
 // Mock prisma
 const mockPrisma = {
 	conversationParticipant: {
-		findMany: mock.fn(),
-		findUnique: mock.fn(),
-		create: mock.fn(),
-		update: mock.fn(),
-		delete: mock.fn()
+		findMany: createMockFunction(),
+		findUnique: createMockFunction(),
+		create: createMockFunction(),
+		update: createMockFunction(),
+		delete: createMockFunction()
 	},
 	user: {
-		findUnique: mock.fn()
+		findUnique: createMockFunction()
 	}
 };
 const mockChatsService = {
-	getParticipantRole: mock.fn()
+	getParticipantRole: createMockFunction()
 };
 
 mock.module('../../src/lib/db.js', { namedExports: { prisma: mockPrisma } });
@@ -115,9 +116,13 @@ describe('Participants Controller', () => {
 
 			await listParticipants(req as never, res as never, () => {});
 
-			const findManyCall = mockPrisma.conversationParticipant.findMany.mock.calls[0];
+			const findManyArgs = mockPrisma.conversationParticipant.findMany.mock.calls[0]?.arguments[
+				0
+			] as unknown as {
+				orderBy?: unknown;
+			};
 
-			assert.deepStrictEqual(findManyCall?.arguments[0]?.orderBy, { joinedAt: 'asc' });
+			assert.deepStrictEqual(findManyArgs.orderBy, { joinedAt: 'asc' });
 		});
 	});
 	describe('addParticipant', () => {

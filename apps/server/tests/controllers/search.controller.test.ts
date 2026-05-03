@@ -9,13 +9,14 @@ import {
 	createMockRequest,
 	createMockResponse,
 	createMockUser,
+	createMockFunction,
 	type MockResponse
 } from '../setup.js';
 
 // Mock the service module
 const mockSearchService = {
-	searchUsers: mock.fn(),
-	searchMessages: mock.fn()
+	searchUsers: createMockFunction(),
+	searchMessages: createMockFunction()
 };
 
 mock.module('../../src/services/search.service.js', { namedExports: mockSearchService });

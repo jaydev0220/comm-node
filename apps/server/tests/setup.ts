@@ -4,7 +4,12 @@
  */
 
 import type { Request, NextFunction } from 'express';
+import { mock } from 'node:test';
 import type { TokenPayload } from '../src/lib/jwt.js';
+
+type TestMockFunction = (...args: never[]) => unknown;
+
+export const createMockFunction = () => mock.fn<TestMockFunction>();
 
 /**
  * Mock user data factory
@@ -13,8 +18,6 @@ export const createMockUser = (overrides: Partial<TokenPayload> = {}): TokenPayl
 	sub: 'user-123',
 	email: 'test@example.com',
 	type: 'access',
-	iat: Math.floor(Date.now() / 1000),
-	exp: Math.floor(Date.now() / 1000) + 3600,
 	...overrides
 });
 
@@ -76,17 +79,17 @@ export interface MockRequestOptions {
 	user?: TokenPayload;
 	headers?: Record<string, string>;
 	cookies?: Record<string, string>;
-	file?: Express.Multer.File;
+	file?: Express.Multer.File | undefined;
 }
 
 export const createMockRequest = (options: MockRequestOptions = {}): Partial<Request> => ({
 	body: options.body ?? {},
 	params: options.params ?? {},
 	query: options.query ?? {},
-	user: options.user,
 	headers: options.headers ?? {},
 	cookies: options.cookies ?? {},
-	file: options.file
+	...(options.user !== undefined ? { user: options.user } : {}),
+	...(options.file !== undefined ? { file: options.file } : {})
 });
 
 /**

@@ -9,16 +9,17 @@ import {
 	createMockRequest,
 	createMockResponse,
 	createMockUser,
+	createMockFunction,
 	type MockResponse
 } from '../setup.js';
 
 // Mock the service module
 const mockChatsService = {
-	listChats: mock.fn(),
-	createChat: mock.fn(),
-	getChat: mock.fn(),
-	updateChat: mock.fn(),
-	deleteChat: mock.fn()
+	listChats: createMockFunction(),
+	createChat: createMockFunction(),
+	getChat: createMockFunction(),
+	updateChat: createMockFunction(),
+	deleteChat: createMockFunction()
 };
 
 mock.module('../../src/services/chats.service.js', { namedExports: mockChatsService });

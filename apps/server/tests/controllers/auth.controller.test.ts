@@ -9,19 +9,20 @@ import {
 	createMockRequest,
 	createMockResponse,
 	createMockApiUser,
+	createMockFunction,
 	type MockResponse
 } from '../setup.js';
 
 // Mock the service module before importing controller
 const mockAuthService = {
-	registerUser: mock.fn(),
-	startEmailRegistration: mock.fn(),
-	completeEmailRegistration: mock.fn(),
-	loginUser: mock.fn(),
-	logoutUser: mock.fn(),
-	refreshTokens: mock.fn(),
-	handleGoogleCallback: mock.fn(),
-	completeGoogleSetup: mock.fn()
+	registerUser: createMockFunction(),
+	startEmailRegistration: createMockFunction(),
+	completeEmailRegistration: createMockFunction(),
+	loginUser: createMockFunction(),
+	logoutUser: createMockFunction(),
+	refreshTokens: createMockFunction(),
+	handleGoogleCallback: createMockFunction(),
+	completeGoogleSetup: createMockFunction()
 };
 const mockGoogleOAuth = {
 	buildAuthorizationUrl: mock.fn(() => 'https://accounts.google.com/oauth')
@@ -292,7 +293,7 @@ describe('Auth Controller', () => {
 
 			const cookieOptions = res._cookies.get('refreshToken')?.options as Record<string, unknown>;
 
-			assert.strictEqual(cookieOptions?.httpOnly, true);
+			assert.strictEqual(cookieOptions?.['httpOnly'], true);
 		});
 	});
 	describe('logout', () => {

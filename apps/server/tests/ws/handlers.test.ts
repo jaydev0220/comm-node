@@ -1,5 +1,6 @@
 import { beforeEach, describe, it, mock } from 'node:test';
 import assert from 'node:assert';
+import { createMockFunction } from '../setup.js';
 
 const registeredHandlers = new Map<string, (...args: unknown[]) => Promise<void>>();
 const mockRegisterHandler = mock.fn(
@@ -9,24 +10,24 @@ const mockRegisterHandler = mock.fn(
 );
 const mockPrisma = {
 	conversationParticipant: {
-		findMany: mock.fn()
+		findMany: createMockFunction()
 	},
 	message: {
-		create: mock.fn()
+		create: createMockFunction()
 	},
 	conversation: {
-		update: mock.fn()
+		update: createMockFunction()
 	}
 };
-const mockSendError = mock.fn();
-const mockSendAck = mock.fn();
-const mockFormatMessageForWs = mock.fn();
-const mockBroadcastToConversation = mock.fn();
-const mockCreateNotification = mock.fn();
+const mockSendError = createMockFunction();
+const mockSendAck = createMockFunction();
+const mockFormatMessageForWs = createMockFunction();
+const mockBroadcastToConversation = createMockFunction();
+const mockCreateNotification = createMockFunction();
 const mockMessagesService = {
-	getConversationParticipantRole: mock.fn(),
-	editMessage: mock.fn(),
-	deleteMessage: mock.fn()
+	getConversationParticipantRole: createMockFunction(),
+	editMessage: createMockFunction(),
+	deleteMessage: createMockFunction()
 };
 
 mock.module('../../src/ws/index.js', {

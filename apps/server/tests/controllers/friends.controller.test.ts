@@ -9,21 +9,26 @@ import {
 	createMockRequest,
 	createMockResponse,
 	createMockUser,
+	createMockFunction,
 	type MockResponse
 } from '../setup.js';
 
 // Mock the service module
 const mockFriendsService = {
-	listFriends: mock.fn(),
-	listPendingRequests: mock.fn(),
-	sendFriendRequest: mock.fn(),
-	respondToRequest: mock.fn(),
-	removeFriend: mock.fn(),
-	blockUser: mock.fn(),
-	unblockUser: mock.fn()
+	listFriends: createMockFunction(),
+	listPendingRequests: createMockFunction(),
+	sendFriendRequest: createMockFunction(),
+	respondToRequest: createMockFunction(),
+	removeFriend: createMockFunction(),
+	blockUser: createMockFunction(),
+	unblockUser: createMockFunction()
 };
+const mockBroadcastFriendAccepted = createMockFunction();
 
 mock.module('../../src/services/friends.service.js', { namedExports: mockFriendsService });
+mock.module('../../src/ws/broadcast.js', {
+	namedExports: { broadcastFriendAccepted: mockBroadcastFriendAccepted }
+});
 
 // Import controller after mocking
 const {
@@ -75,6 +80,7 @@ describe('Friends Controller', () => {
 		mockFriendsService.removeFriend.mock.resetCalls();
 		mockFriendsService.blockUser.mock.resetCalls();
 		mockFriendsService.unblockUser.mock.resetCalls();
+		mockBroadcastFriendAccepted.mock.resetCalls();
 	});
 	describe('listFriends', () => {
 		it('should return list of friends wrapped in data object', async () => {
@@ -205,6 +211,7 @@ describe('Friends Controller', () => {
 
 			await respondToRequest(req as never, res as never, () => {});
 			assert.deepStrictEqual(res._json, friendship);
+			assert.deepStrictEqual(mockBroadcastFriendAccepted.mock.calls[0]?.arguments, [friendship]);
 		});
 		it('should reject friend request and return message', async () => {
 			mockFriendsService.respondToRequest.mock.mockImplementationOnce(() => Promise.resolve(null));

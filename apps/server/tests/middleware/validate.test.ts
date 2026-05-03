@@ -33,7 +33,7 @@ describe('validate middleware', () => {
 		const next = createMockNext();
 
 		await validateQuery(listChatsParamsSchema)(req as never, {} as never, next);
-		assert.deepStrictEqual(req.query, { limit: 50 });
+		assert.deepStrictEqual(req['query'], { limit: 50 });
 		assert.deepStrictEqual(next.mock.calls, [[]]);
 	});
 	it('should coerce search query params and apply defaults', async () => {
@@ -41,7 +41,7 @@ describe('validate middleware', () => {
 		const next = createMockNext();
 
 		await validateQuery(userSearchParamsSchema)(req as never, {} as never, next);
-		assert.deepStrictEqual(req.query, { q: 'alice', page: 2, limit: 20 });
+		assert.deepStrictEqual(req['query'], { q: 'alice', page: 2, limit: 20 });
 		assert.deepStrictEqual(next.mock.calls, [[]]);
 	});
 	it('should coerce message list limit query for message endpoints', async () => {
@@ -49,7 +49,7 @@ describe('validate middleware', () => {
 		const next = createMockNext();
 
 		await validateQuery(listMessagesParamsSchema)(req as never, {} as never, next);
-		assert.deepStrictEqual(req.query, { cursor: 'msg-1', limit: 25 });
+		assert.deepStrictEqual(req['query'], { cursor: 'msg-1', limit: 25 });
 		assert.deepStrictEqual(next.mock.calls, [[]]);
 	});
 	it('should return validation error when message list limit exceeds max', async () => {
@@ -57,7 +57,9 @@ describe('validate middleware', () => {
 		const next = createMockNext();
 
 		await assert.rejects(
-			() => validateQuery(listMessagesParamsSchema)(req as never, {} as never, next),
+			async () => {
+				await validateQuery(listMessagesParamsSchema)(req as never, {} as never, next);
+			},
 			(error: { code?: string; status?: number; details?: Array<{ field: string }> }) => {
 				assert.strictEqual(error.code, 'VALIDATION_FAILED');
 				assert.strictEqual(error.status, 422);
@@ -76,7 +78,9 @@ describe('validate middleware', () => {
 		});
 
 		await assert.rejects(
-			() => validateParams(messageMutationParamsSchema)(req as never, {} as never, next),
+			async () => {
+				await validateParams(messageMutationParamsSchema)(req as never, {} as never, next);
+			},
 			(error: { code?: string; status?: number; details?: Array<{ field: string }> }) => {
 				assert.strictEqual(error.code, 'VALIDATION_FAILED');
 				assert.strictEqual(error.status, 422);
@@ -92,7 +96,9 @@ describe('validate middleware', () => {
 		const next = createMockNext();
 
 		await assert.rejects(
-			() => validateBody(editMessageRequestSchema)(req as never, {} as never, next),
+			async () => {
+				await validateBody(editMessageRequestSchema)(req as never, {} as never, next);
+			},
 			(error: { code?: string; status?: number; details?: Array<{ field: string }> }) => {
 				assert.strictEqual(error.code, 'VALIDATION_FAILED');
 				assert.strictEqual(error.status, 422);
@@ -107,7 +113,9 @@ describe('validate middleware', () => {
 		const next = createMockNext();
 
 		await assert.rejects(
-			() => validateBody(deleteMessageRequestSchema)(req as never, {} as never, next),
+			async () => {
+				await validateBody(deleteMessageRequestSchema)(req as never, {} as never, next);
+			},
 			(error: { code?: string; status?: number; details?: Array<{ field: string }> }) => {
 				assert.strictEqual(error.code, 'VALIDATION_FAILED');
 				assert.strictEqual(error.status, 422);

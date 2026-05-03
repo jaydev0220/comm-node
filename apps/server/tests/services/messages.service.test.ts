@@ -1,13 +1,14 @@
 import { beforeEach, describe, it, mock } from 'node:test';
 import assert from 'node:assert';
+import { createMockFunction } from '../setup.js';
 
 const mockPrisma = {
 	conversationParticipant: {
-		findUnique: mock.fn()
+		findUnique: createMockFunction()
 	},
 	message: {
-		findUnique: mock.fn(),
-		update: mock.fn()
+		findUnique: createMockFunction(),
+		update: createMockFunction()
 	}
 };
 

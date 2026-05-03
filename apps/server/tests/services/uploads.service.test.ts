@@ -3,10 +3,11 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { beforeEach, describe, it, mock } from 'node:test';
 import assert from 'node:assert';
+import { createMockFunction } from '../setup.js';
 
 const mockPrisma = {
 	attachment: {
-		create: mock.fn()
+		create: createMockFunction()
 	}
 };
 

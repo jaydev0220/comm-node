@@ -5,12 +5,17 @@
 
 import { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert';
-import { createMockRequest, createMockResponse, type MockResponse } from '../setup.js';
+import {
+	createMockFunction,
+	createMockRequest,
+	createMockResponse,
+	type MockResponse
+} from '../setup.js';
 
 // Note: For upload controller, we test the uploadFile handler directly
 // The multer middleware is configured separately and should be tested in integration tests
 
-const mockCreateUploadedAttachment = mock.fn();
+const mockCreateUploadedAttachment = createMockFunction();
 
 mock.module('../../src/services/uploads.service.js', {
 	namedExports: { createUploadedAttachment: mockCreateUploadedAttachment }

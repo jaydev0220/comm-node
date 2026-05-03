@@ -10,22 +10,32 @@ import {
 	createMockResponse,
 	createMockUser,
 	createMockApiUser,
+	createMockFunction,
 	type MockResponse
 } from '../setup.js';
 
 // Mock the service module
 const mockUsersService = {
-	findById: mock.fn(),
-	updateUser: mock.fn(),
-	updateUserAvatar: mock.fn(),
-	deleteUser: mock.fn(),
-	searchUsers: mock.fn()
+	findById: createMockFunction(),
+	updateUser: createMockFunction(),
+	updateUserAvatar: createMockFunction(),
+	deleteUser: createMockFunction(),
+	updateUserPassword: createMockFunction(),
+	searchUsers: createMockFunction()
+};
+const mockAuthService = {
+	verifyUserPassword: createMockFunction()
+};
+const mockPassword = {
+	hashPassword: createMockFunction()
 };
 
 mock.module('../../src/services/users.service.js', { namedExports: mockUsersService });
+mock.module('../../src/services/auth.service.js', { namedExports: mockAuthService });
+mock.module('../../src/lib/password.js', { namedExports: mockPassword });
 
 // Import controller after mocking
-const { getMe, updateMe, uploadMeAvatar, deleteMe, searchUsers } =
+const { getMe, updateMe, uploadMeAvatar, deleteMe, changePassword, searchUsers } =
 	await import('../../src/controllers/users.controller.js');
 
 describe('Users Controller', () => {
@@ -37,7 +47,10 @@ describe('Users Controller', () => {
 		mockUsersService.updateUser.mock.resetCalls();
 		mockUsersService.updateUserAvatar.mock.resetCalls();
 		mockUsersService.deleteUser.mock.resetCalls();
+		mockUsersService.updateUserPassword.mock.resetCalls();
 		mockUsersService.searchUsers.mock.resetCalls();
+		mockAuthService.verifyUserPassword.mock.resetCalls();
+		mockPassword.hashPassword.mock.resetCalls();
 	});
 	describe('getMe', () => {
 		it('should return current user', async () => {
@@ -184,6 +197,47 @@ describe('Users Controller', () => {
 			await deleteMe(req as never, res as never, () => {});
 			assert.strictEqual(mockUsersService.deleteUser.mock.calls.length, 1);
 			assert.strictEqual(mockUsersService.deleteUser.mock.calls[0]?.arguments[0], 'delete-me-123');
+		});
+	});
+	describe('changePassword', () => {
+		it('should verify current password, hash new password, and update stored hash', async () => {
+			mockAuthService.verifyUserPassword.mock.mockImplementationOnce(() => Promise.resolve(true));
+			mockPassword.hashPassword.mock.mockImplementationOnce(() => Promise.resolve('new-password-hash'));
+			mockUsersService.updateUserPassword.mock.mockImplementationOnce(() => Promise.resolve());
+
+			const req = createMockRequest({
+				user: createMockUser({ sub: 'user-123' }),
+				body: { currentPassword: 'old-password', newPassword: 'new-password' }
+			});
+
+			await changePassword(req as never, res as never, () => {});
+			assert.strictEqual(res._status, 204);
+			assert.deepStrictEqual(mockAuthService.verifyUserPassword.mock.calls[0]?.arguments, [
+				'user-123',
+				'old-password'
+			]);
+			assert.deepStrictEqual(mockPassword.hashPassword.mock.calls[0]?.arguments, ['new-password']);
+			assert.deepStrictEqual(mockUsersService.updateUserPassword.mock.calls[0]?.arguments, [
+				'user-123',
+				'new-password-hash'
+			]);
+		});
+		it('should reject password change when current password is invalid', async () => {
+			mockAuthService.verifyUserPassword.mock.mockImplementationOnce(() => Promise.resolve(false));
+
+			const req = createMockRequest({
+				user: createMockUser({ sub: 'user-123' }),
+				body: { currentPassword: 'wrong-password', newPassword: 'new-password' }
+			});
+
+			await assert.rejects(
+				async () => {
+					await changePassword(req as never, res as never, () => {});
+				},
+				{ message: '目前密碼錯誤' }
+			);
+			assert.strictEqual(mockPassword.hashPassword.mock.calls.length, 0);
+			assert.strictEqual(mockUsersService.updateUserPassword.mock.calls.length, 0);
 		});
 	});
 	describe('searchUsers', () => {

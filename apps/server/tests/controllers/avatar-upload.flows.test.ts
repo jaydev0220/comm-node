@@ -6,24 +6,25 @@ import { mkdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import type { TokenPayload } from '../../src/lib/jwt.js';
-import { createMockApiUser } from '../setup.js';
+import { createMockApiUser, createMockFunction } from '../setup.js';
 
 const mockAuthService = {
-	registerUser: mock.fn(),
-	startEmailRegistration: mock.fn(),
-	completeEmailRegistration: mock.fn(),
-	loginUser: mock.fn(),
-	logoutUser: mock.fn(),
-	refreshTokens: mock.fn(),
-	handleGoogleCallback: mock.fn(),
-	completeGoogleSetup: mock.fn()
+	registerUser: createMockFunction(),
+	startEmailRegistration: createMockFunction(),
+	completeEmailRegistration: createMockFunction(),
+	loginUser: createMockFunction(),
+	logoutUser: createMockFunction(),
+	refreshTokens: createMockFunction(),
+	verifyUserPassword: createMockFunction(),
+	handleGoogleCallback: createMockFunction(),
+	completeGoogleSetup: createMockFunction()
 };
 const mockUsersService = {
-	findById: mock.fn(),
-	updateUser: mock.fn(),
-	updateUserAvatar: mock.fn(),
-	deleteUser: mock.fn(),
-	searchUsers: mock.fn()
+	findById: createMockFunction(),
+	updateUser: createMockFunction(),
+	updateUserAvatar: createMockFunction(),
+	deleteUser: createMockFunction(),
+	searchUsers: createMockFunction()
 };
 const mockGoogleOAuth = {
 	buildAuthorizationUrl: mock.fn(() => 'https://accounts.google.com/oauth')
@@ -37,9 +38,7 @@ const mockEnv = {
 const authenticatedUser: TokenPayload = {
 	sub: 'user-123',
 	email: 'test@example.com',
-	type: 'access',
-	iat: Math.floor(Date.now() / 1000),
-	exp: Math.floor(Date.now() / 1000) + 3600
+	type: 'access'
 };
 
 mock.module('../../src/services/auth.service.js', { namedExports: mockAuthService });
@@ -76,6 +75,15 @@ const cleanupUploadedFile = async (avatarPathArg: unknown): Promise<void> => {
 	await unlink(path.resolve(process.cwd(), avatarPath.slice(1))).catch(() => {});
 };
 
+const assertAvatarPathArg = (value: unknown): string => {
+	assert.strictEqual(typeof value, 'string');
+
+	if (typeof value !== 'string') {
+		throw new TypeError('Expected avatar URL argument to be a string');
+	}
+	return value;
+};
+
 describe('Avatar upload flows', () => {
 	let server: Server;
 	let baseUrl = '';
@@ -91,9 +99,10 @@ describe('Avatar upload flows', () => {
 		app.use('/api/users', usersRoutes);
 		app.use(notFoundHandler);
 		app.use(errorHandler);
-		server = app.listen(0);
-		await new Promise<void>((resolve) => {
+		server = app.listen(0, '127.0.0.1');
+		await new Promise<void>((resolve, reject) => {
 			server.once('listening', resolve);
+			server.once('error', reject);
 		});
 
 		const address = server.address();
@@ -123,6 +132,7 @@ describe('Avatar upload flows', () => {
 		mockAuthService.loginUser.mock.resetCalls();
 		mockAuthService.logoutUser.mock.resetCalls();
 		mockAuthService.refreshTokens.mock.resetCalls();
+		mockAuthService.verifyUserPassword.mock.resetCalls();
 		mockAuthService.handleGoogleCallback.mock.resetCalls();
 		mockAuthService.completeGoogleSetup.mock.resetCalls();
 		mockUsersService.findById.mock.resetCalls();
@@ -204,11 +214,13 @@ describe('Avatar upload flows', () => {
 			displayName: 'Email User'
 		});
 
-		const avatarUrlArg = mockAuthService.completeEmailRegistration.mock.calls[0]?.arguments[1];
+		const avatarUrlArg = mockAuthService.completeEmailRegistration.mock.calls[0]?.arguments[
+			1
+		] as unknown;
+		const avatarUrl = assertAvatarPathArg(avatarUrlArg);
 
-		assert.strictEqual(typeof avatarUrlArg, 'string');
-		assert.ok((avatarUrlArg as string).startsWith('/uploads/'));
-		assert.ok((avatarUrlArg as string).endsWith('.png'));
+		assert.ok(avatarUrl.startsWith('/uploads/'));
+		assert.ok(avatarUrl.endsWith('.png'));
 	});
 	it('register accepts optional avatar file and passes avatar path', async () => {
 		mockAuthService.registerUser.mock.mockImplementationOnce((_data: unknown, avatarUrl?: string) =>
@@ -243,11 +255,11 @@ describe('Avatar upload flows', () => {
 			password: 'password123'
 		});
 
-		const avatarUrlArg = mockAuthService.registerUser.mock.calls[0]?.arguments[1];
+		const avatarUrlArg = mockAuthService.registerUser.mock.calls[0]?.arguments[1] as unknown;
+		const avatarUrl = assertAvatarPathArg(avatarUrlArg);
 
-		assert.strictEqual(typeof avatarUrlArg, 'string');
-		assert.ok((avatarUrlArg as string).startsWith('/uploads/'));
-		assert.ok((avatarUrlArg as string).endsWith('.png'));
+		assert.ok(avatarUrl.startsWith('/uploads/'));
+		assert.ok(avatarUrl.endsWith('.png'));
 	});
 	it('register ignores avatarUrl text input and keeps avatar optional', async () => {
 		mockAuthService.registerUser.mock.mockImplementationOnce(() =>
@@ -313,11 +325,11 @@ describe('Avatar upload flows', () => {
 			displayName: 'Google User'
 		});
 
-		const avatarUrlArg = mockAuthService.completeGoogleSetup.mock.calls[0]?.arguments[1];
+		const avatarUrlArg = mockAuthService.completeGoogleSetup.mock.calls[0]?.arguments[1] as unknown;
+		const avatarUrl = assertAvatarPathArg(avatarUrlArg);
 
-		assert.strictEqual(typeof avatarUrlArg, 'string');
-		assert.ok((avatarUrlArg as string).startsWith('/uploads/'));
-		assert.ok((avatarUrlArg as string).endsWith('.png'));
+		assert.ok(avatarUrl.startsWith('/uploads/'));
+		assert.ok(avatarUrl.endsWith('.png'));
 	});
 	it('google completion ignores avatarUrl text input when no file is uploaded', async () => {
 		mockAuthService.completeGoogleSetup.mock.mockImplementationOnce(() =>
@@ -370,11 +382,11 @@ describe('Avatar upload flows', () => {
 		assert.strictEqual(mockUsersService.updateUserAvatar.mock.calls.length, 1);
 		assert.strictEqual(mockUsersService.updateUserAvatar.mock.calls[0]?.arguments[0], 'user-123');
 
-		const avatarUrlArg = mockUsersService.updateUserAvatar.mock.calls[0]?.arguments[1];
+		const avatarUrlArg = mockUsersService.updateUserAvatar.mock.calls[0]?.arguments[1] as unknown;
+		const avatarUrl = assertAvatarPathArg(avatarUrlArg);
 
-		assert.strictEqual(typeof avatarUrlArg, 'string');
-		assert.ok((avatarUrlArg as string).startsWith('/uploads/'));
-		assert.ok((avatarUrlArg as string).endsWith('.png'));
+		assert.ok(avatarUrl.startsWith('/uploads/'));
+		assert.ok(avatarUrl.endsWith('.png'));
 	});
 	it('profile avatar endpoint returns bad request when file is missing', async () => {
 		const response = await fetch(`${baseUrl}/api/users/me/avatar`, {

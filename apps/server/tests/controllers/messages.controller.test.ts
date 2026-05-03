@@ -9,16 +9,17 @@ import {
 	createMockRequest,
 	createMockResponse,
 	createMockUser,
+	createMockFunction,
 	type MockResponse
 } from '../setup.js';
 
 // Mock prisma
 const mockPrisma = {
 	conversationParticipant: {
-		findUnique: mock.fn()
+		findUnique: createMockFunction()
 	},
 	message: {
-		findMany: mock.fn()
+		findMany: createMockFunction()
 	}
 };
 
@@ -120,9 +121,11 @@ describe('Messages Controller', () => {
 			await listMessages(req as never, res as never, () => {});
 
 			// Verify cursor was passed to query
-			const findManyCall = mockPrisma.message.findMany.mock.calls[0];
+			const findManyArgs = mockPrisma.message.findMany.mock.calls[0]?.arguments[0] as unknown as {
+				cursor?: unknown;
+			};
 
-			assert.ok(findManyCall?.arguments[0]?.cursor);
+			assert.ok(findManyArgs.cursor);
 		});
 		it('should indicate hasMore when more messages exist', async () => {
 			mockPrisma.conversationParticipant.findUnique.mock.mockImplementationOnce(() =>
@@ -167,9 +170,11 @@ describe('Messages Controller', () => {
 
 			await listMessages(req as never, res as never, () => {});
 
-			const findManyCall = mockPrisma.message.findMany.mock.calls[0];
+			const findManyArgs = mockPrisma.message.findMany.mock.calls[0]?.arguments[0] as unknown as {
+				take?: unknown;
+			};
 
-			assert.strictEqual(findManyCall?.arguments[0]?.take, 51); // limit + 1 to check hasMore
+			assert.strictEqual(findManyArgs.take, 51); // limit + 1 to check hasMore
 		});
 		it('should format messages correctly with attachments', async () => {
 			mockPrisma.conversationParticipant.findUnique.mock.mockImplementationOnce(() =>
@@ -255,9 +260,11 @@ describe('Messages Controller', () => {
 
 			await listMessages(req as never, res as never, () => {});
 
-			const findManyCall = mockPrisma.message.findMany.mock.calls[0];
+			const findManyArgs = mockPrisma.message.findMany.mock.calls[0]?.arguments[0] as unknown as {
+				orderBy?: unknown;
+			};
 
-			assert.deepStrictEqual(findManyCall?.arguments[0]?.orderBy, { createdAt: 'desc' });
+			assert.deepStrictEqual(findManyArgs.orderBy, { createdAt: 'desc' });
 		});
 	});
 });

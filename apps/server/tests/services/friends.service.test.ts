@@ -5,17 +5,17 @@
 
 import { describe, it, mock, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { createMockDbUser } from '../setup.js';
+import { createMockDbUser, createMockFunction } from '../setup.js';
 
 const mockPrisma = {
 	friendship: {
-		findMany: mock.fn(),
-		findFirst: mock.fn(),
-		create: mock.fn()
+		findMany: createMockFunction(),
+		findFirst: createMockFunction(),
+		create: createMockFunction()
 	}
 };
-const mockGetConnectedUserIds = mock.fn();
-const mockCreateNotification = mock.fn();
+const mockGetConnectedUserIds = createMockFunction();
+const mockCreateNotification = createMockFunction();
 
 mock.module('../../src/lib/db.js', { namedExports: { prisma: mockPrisma } });
 mock.module('../../src/ws/connection.js', {
@@ -95,6 +95,7 @@ describe('Friends Service', () => {
 					username: 'friend1',
 					displayName: 'Friend One',
 					avatarUrl: undefined,
+					authMethods: [],
 					createdAt: '2024-01-01T00:00:00.000Z',
 					updatedAt: '2024-01-01T00:00:00.000Z',
 					isOnline: true
@@ -105,6 +106,7 @@ describe('Friends Service', () => {
 					username: 'friend2',
 					displayName: 'Friend Two',
 					avatarUrl: undefined,
+					authMethods: [],
 					createdAt: '2024-01-01T00:00:00.000Z',
 					updatedAt: '2024-01-01T00:00:00.000Z',
 					isOnline: false
