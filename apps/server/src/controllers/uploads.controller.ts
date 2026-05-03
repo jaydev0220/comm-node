@@ -4,6 +4,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { errors } from '../middleware/error-handler.js';
 import { ensureUploadsDirectory } from '../lib/uploads.js';
+import { createUploadedAttachment } from '../services/uploads.service.js';
 
 const DEFAULT_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const AVATAR_FIELD_NAME = 'avatar';
@@ -95,13 +96,7 @@ export const uploadFile: RequestHandler = async (req, res) => {
 		throw errors.badRequest('No file provided');
 	}
 
-	const file = req.file;
+	const attachment = await createUploadedAttachment(req.file);
 
-	res.status(201).json({
-		id: randomUUID(),
-		url: `/uploads/${file.filename}`,
-		mimeType: file.mimetype,
-		size: file.size,
-		name: file.originalname
-	});
+	res.status(201).json(attachment);
 };

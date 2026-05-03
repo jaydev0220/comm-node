@@ -3,12 +3,18 @@
  * Uses Node.js built-in test runner.
  */
 
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert';
 import { createMockRequest, createMockResponse, type MockResponse } from '../setup.js';
 
 // Note: For upload controller, we test the uploadFile handler directly
 // The multer middleware is configured separately and should be tested in integration tests
+
+const mockCreateUploadedAttachment = mock.fn();
+
+mock.module('../../src/services/uploads.service.js', {
+	namedExports: { createUploadedAttachment: mockCreateUploadedAttachment }
+});
 
 // Import controller
 const { uploadFile } = await import('../../src/controllers/uploads.controller.js');
@@ -26,12 +32,33 @@ const createMockMulterFile = (overrides = {}): Express.Multer.File => ({
 	buffer: Buffer.from(''),
 	...overrides
 });
+const createMockAttachmentResponse = (
+	file: Express.Multer.File,
+	overrides: Partial<{
+		id: string;
+		url: string;
+		mimeType: string;
+		size: number;
+		name: string;
+	}> = {}
+) => ({
+	id: 'attachment-123',
+	url: `/uploads/${file.filename}`,
+	mimeType: file.mimetype,
+	size: file.size,
+	name: file.originalname,
+	...overrides
+});
 
 describe('Uploads Controller', () => {
 	let res: MockResponse;
 
 	beforeEach(() => {
 		res = createMockResponse();
+		mockCreateUploadedAttachment.mock.resetCalls();
+		mockCreateUploadedAttachment.mock.mockImplementation((file: Express.Multer.File) =>
+			Promise.resolve(createMockAttachmentResponse(file))
+		);
 	});
 	describe('uploadFile', () => {
 		it('should return 201 with file info when file is uploaded', async () => {
@@ -47,6 +74,7 @@ describe('Uploads Controller', () => {
 
 			await uploadFile(req as never, res as never, () => {});
 			assert.strictEqual(res._status, 201);
+			assert.deepStrictEqual(mockCreateUploadedAttachment.mock.calls[0]?.arguments, [mockFile]);
 
 			const responseData = res._json as {
 				id: string;
@@ -56,7 +84,7 @@ describe('Uploads Controller', () => {
 				name: string;
 			};
 
-			assert.ok(responseData.id); // UUID generated
+			assert.strictEqual(responseData.id, 'attachment-123');
 			assert.strictEqual(responseData.url, '/uploads/abc-123.pdf');
 			assert.strictEqual(responseData.mimeType, 'application/pdf');
 			assert.strictEqual(responseData.size, 54321);
@@ -73,6 +101,7 @@ describe('Uploads Controller', () => {
 				},
 				{ message: 'No file provided' }
 			);
+			assert.strictEqual(mockCreateUploadedAttachment.mock.calls.length, 0);
 		});
 		it('should handle image file upload', async () => {
 			const mockFile = createMockMulterFile({
@@ -135,6 +164,12 @@ describe('Uploads Controller', () => {
 			const res1 = createMockResponse();
 			const res2 = createMockResponse();
 
+			mockCreateUploadedAttachment.mock.mockImplementationOnce((file: Express.Multer.File) =>
+				Promise.resolve(createMockAttachmentResponse(file, { id: 'attachment-1' }))
+			);
+			mockCreateUploadedAttachment.mock.mockImplementationOnce((file: Express.Multer.File) =>
+				Promise.resolve(createMockAttachmentResponse(file, { id: 'attachment-2' }))
+			);
 			await uploadFile(req1 as never, res1 as never, () => {});
 			await uploadFile(req2 as never, res2 as never, () => {});
 
