@@ -2,6 +2,13 @@
 
 A real-time communication platform with WebSocket messaging, friend management, OAuth authentication, and real-time notification pushes for friend requests and new messages.
 
+## Messaging Permissions
+
+- Message edits: sender only
+- Message deletes: sender or GROUP owner
+- GROUP admins cannot delete arbitrary messages
+- Client message bubbles reveal an actions menu (`複製訊息`, `編輯訊息`, `移除訊息`) on hover, with edit/delete options gated by sender ownership and group-owner delete scope.
+
 ## Tech Stack
 
 - **Runtime:** Node.js 24

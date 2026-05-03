@@ -104,11 +104,15 @@ export {
 	ogEmbedSchema,
 	messageSchema,
 	listMessagesParamsSchema,
+	editMessageRequestSchema,
+	deleteMessageRequestSchema,
 	type MessageType,
 	type Attachment,
 	type OgEmbed,
 	type Message,
 	type ListMessagesParams,
+	type EditMessageRequest,
+	type DeleteMessageRequest,
 } from "./messages.js";
 
 // Search schemas

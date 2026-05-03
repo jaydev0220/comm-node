@@ -13,6 +13,7 @@ import {
 } from 'react';
 import Avatar from '@/components/avatar';
 import { GroupChatTopBar } from '@/components/group-chat-top-bar';
+import { MessageActionsMenu, type MessageActionState } from '@/components/message-actions-menu';
 import { Button } from '@/components/ui';
 import { api, getApiUrl, getAssetUrl } from '@/lib/api';
 import type { Chat, ChatMessage, ChatMessageAttachment, CursorPage, User } from '@/lib/api-types';
@@ -21,6 +22,12 @@ interface GroupChatViewProps {
 	accessToken: string;
 	currentUser: User;
 	groupId: string;
+	onMessageDeleteIntent?: (intent: GroupMessageDeleteIntent) => void;
+}
+
+export interface GroupMessageDeleteIntent {
+	messageId: string;
+	deleteScope: 'sender' | 'group-owner';
 }
 
 interface MessageHistoryResponse {
@@ -66,6 +73,27 @@ interface QueuedAttachment {
 	id: string;
 	file: File;
 }
+
+interface EditingMessage {
+	messageId: string;
+	originalContent: string;
+}
+
+type PendingMessageRequest =
+	| {
+			type: 'send';
+			messageId: string;
+	  }
+	| {
+			type: 'edit';
+			messageId: string;
+			previousMessage: GroupMessage;
+	  }
+	| {
+			type: 'delete';
+			messageId: string;
+			previousMessage: GroupMessage;
+	  };
 
 const GENERIC_ALLOWED_MIME_TYPES = [
 	'image/jpeg',
@@ -162,6 +190,36 @@ const mapWsMessageToGroupMessage = (message: WsMessage): GroupMessage => ({
 	isPending: false
 });
 
+const applyDeletedMessageState = (
+	message: GroupMessage,
+	deletedMessageId: string,
+	isPending = message.isPending
+): GroupMessage => {
+	if (message.id !== deletedMessageId) {
+		return message;
+	}
+
+	return {
+		...message,
+		content: null,
+		attachments: [],
+		deletedAt: message.deletedAt ?? new Date().toISOString(),
+		isPending
+	};
+};
+
+const findFirstPendingSendRequestId = (
+	pendingRequests: Map<string, PendingMessageRequest>
+): string | null => {
+	for (const [requestId, request] of pendingRequests) {
+		if (request.type === 'send') {
+			return requestId;
+		}
+	}
+
+	return null;
+};
+
 const parseWsMessage = (value: unknown): WsMessage | null => {
 	if (!isRecord(value)) {
 		return null;
@@ -234,18 +292,36 @@ const parseWsMessage = (value: unknown): WsMessage | null => {
 const GroupChatBubble = ({
 	isSelf,
 	isPending,
-	message
+	message,
+	actionState,
+	isMenuOpen,
+	onToggleMenu,
+	onCloseMenu,
+	onCopy,
+	onEdit,
+	onDelete,
+	editDisabled,
+	deleteDisabled
 }: {
 	isSelf: boolean;
 	isPending: boolean;
 	message: GroupMessage;
+	actionState: MessageActionState;
+	isMenuOpen: boolean;
+	onToggleMenu: () => void;
+	onCloseMenu: () => void;
+	onCopy: () => void | Promise<void>;
+	onEdit: () => void;
+	onDelete: () => void;
+	editDisabled: boolean;
+	deleteDisabled: boolean;
 }) => {
 	const bubbleClassName = isSelf
 		? 'bg-action text-action-fg rounded-br-sm'
 		: 'bg-surface-raised text-text-primary rounded-bl-sm';
 
 	return (
-		<div className={`flex ${isSelf ? 'justify-end' : 'justify-start'}`}>
+		<div className={`group flex ${isSelf ? 'justify-end' : 'justify-start'}`}>
 			{!isSelf ? (
 				<div className="mr-2 mb-1 shrink-0 self-end">
 					<Avatar
@@ -255,58 +331,73 @@ const GroupChatBubble = ({
 					/>
 				</div>
 			) : null}
-			<div className="max-w-[75%]">
-				{!isSelf ? (
-					<p className="text-text-muted mb-1 px-1 text-xs font-medium">
-						{message.sender.displayName}
-					</p>
-				) : null}
-				<div
-					className={`rounded-2xl px-3 py-2 shadow-sm transition-opacity ${bubbleClassName} ${
-						isPending ? 'opacity-50' : 'opacity-100'
-					}`}
-				>
-					{message.deletedAt ? (
-						<p className="text-sm italic">訊息已刪除</p>
-					) : (
-						<>
-							{message.content ? (
-								<p className="text-sm wrap-break-word whitespace-pre-wrap">{message.content}</p>
-							) : null}
-							{message.attachments.length > 0 ? (
-								<div className={`mt-2 flex flex-col gap-1 ${message.content ? '' : 'mt-0'}`}>
-									{message.attachments.map((attachment) => {
-										const attachmentUrl = getAssetUrl(attachment.url) ?? attachment.url;
-
-										return (
-											<a
-												key={attachment.id}
-												href={attachmentUrl}
-												target="_blank"
-												rel="noreferrer"
-												className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${
-													isSelf
-														? 'border-action-fg/40 text-action-fg hover:bg-action-fg/10'
-														: 'border-border text-text-secondary hover:bg-surface'
-												}`}
-											>
-												<Paperclip className="size-3" />
-												<span className="truncate">{attachment.name}</span>
-											</a>
-										);
-									})}
-								</div>
-							) : null}
-						</>
-					)}
+			<div
+				className={`flex max-w-[80%] items-center gap-2 ${isSelf ? 'flex-row' : 'flex-row-reverse'}`}
+			>
+				<MessageActionsMenu
+					state={actionState}
+					isOpen={isMenuOpen}
+					onToggle={onToggleMenu}
+					onClose={onCloseMenu}
+					onCopy={onCopy}
+					onEdit={onEdit}
+					onDelete={onDelete}
+					editDisabled={editDisabled}
+					deleteDisabled={deleteDisabled}
+				/>
+				<div className="min-w-0">
+					{!isSelf ? (
+						<p className="text-text-muted mb-1 px-1 text-xs font-medium">
+							{message.sender.displayName}
+						</p>
+					) : null}
 					<div
-						className={`mt-1 flex items-center gap-1 text-[11px] ${
-							isSelf ? 'text-action-fg/80' : 'text-text-muted'
+						className={`rounded-2xl px-3 py-2 shadow-sm transition-opacity ${bubbleClassName} ${
+							isPending ? 'opacity-50' : 'opacity-100'
 						}`}
 					>
-						<span>{formatTime(message.createdAt)}</span>
-						{message.editedAt ? <span>已編輯</span> : null}
-						{isPending ? <span>傳送中…</span> : null}
+						{message.deletedAt ? (
+							<p className="text-sm italic">訊息已刪除</p>
+						) : (
+							<>
+								{message.content ? (
+									<p className="text-sm wrap-break-word whitespace-pre-wrap">{message.content}</p>
+								) : null}
+								{message.attachments.length > 0 ? (
+									<div className={`mt-2 flex flex-col gap-1 ${message.content ? '' : 'mt-0'}`}>
+										{message.attachments.map((attachment) => {
+											const attachmentUrl = getAssetUrl(attachment.url) ?? attachment.url;
+
+											return (
+												<a
+													key={attachment.id}
+													href={attachmentUrl}
+													target="_blank"
+													rel="noreferrer"
+													className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${
+														isSelf
+															? 'border-action-fg/40 text-action-fg hover:bg-action-fg/10'
+															: 'border-border text-text-secondary hover:bg-surface'
+													}`}
+												>
+													<Paperclip className="size-3" />
+													<span className="truncate">{attachment.name}</span>
+												</a>
+											);
+										})}
+									</div>
+								) : null}
+							</>
+						)}
+						<div
+							className={`mt-1 flex items-center gap-1 text-[11px] ${
+								isSelf ? 'text-action-fg/80' : 'text-text-muted'
+							}`}
+						>
+							<span>{formatTime(message.createdAt)}</span>
+							{message.editedAt ? <span>已編輯</span> : null}
+							{isPending ? <span>傳送中…</span> : null}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -342,7 +433,12 @@ const IconButton = ({
 	</button>
 );
 
-export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatViewProps) {
+export function GroupChatView({
+	accessToken,
+	currentUser,
+	groupId,
+	onMessageDeleteIntent
+}: GroupChatViewProps) {
 	const [groupChat, setGroupChat] = useState<Chat | null>(null);
 	const [conversationId, setConversationId] = useState<string | null>(null);
 	const [messages, setMessages] = useState<GroupMessage[]>([]);
@@ -358,11 +454,14 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 	const [conversationError, setConversationError] = useState<string | null>(null);
 	const [sendError, setSendError] = useState<string | null>(null);
 	const [attachmentError, setAttachmentError] = useState<string | null>(null);
+	const [openMessageMenuId, setOpenMessageMenuId] = useState<string | null>(null);
+	const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
+	const [deletingMessageIds, setDeletingMessageIds] = useState<string[]>([]);
 	const historyContainerRef = useRef<HTMLDivElement | null>(null);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 	const socketRef = useRef<WebSocket | null>(null);
-	const pendingRequestIdsRef = useRef<string[]>([]);
+	const pendingMessageRequestsRef = useRef<Map<string, PendingMessageRequest>>(new Map());
 	const shouldScrollToBottomRef = useRef(false);
 	const scrollRestoreRef = useRef<{
 		height: number;
@@ -507,7 +606,12 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 		setConversationError(null);
 		setSendError(null);
 		setAttachmentError(null);
-		pendingRequestIdsRef.current = [];
+		setOpenMessageMenuId(null);
+		setEditingMessage(null);
+		setDeletingMessageIds([]);
+		setInputValue('');
+		setQueuedAttachments([]);
+		pendingMessageRequestsRef.current.clear();
 		setIsLoadingInitialMessages(true);
 
 		const setupGroupConversation = async () => {
@@ -607,7 +711,9 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 					}
 
 					if (payload.sender.id === currentUser.id) {
-						const firstPendingRequestId = pendingRequestIdsRef.current.shift();
+						const firstPendingRequestId = findFirstPendingSendRequestId(
+							pendingMessageRequestsRef.current
+						);
 
 						if (firstPendingRequestId) {
 							let replaced = false;
@@ -621,6 +727,7 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 							});
 
 							if (replaced) {
+								pendingMessageRequestsRef.current.delete(firstPendingRequestId);
 								return withReplacement;
 							}
 						}
@@ -654,8 +761,7 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 							? {
 									...message,
 									content: editedContent,
-									editedAt,
-									isPending: false
+									editedAt
 								}
 							: message
 					)
@@ -673,17 +779,7 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 				const deletedMessageId = payload.messageId;
 
 				setMessages((currentMessages) =>
-					currentMessages.map((message) =>
-						message.id === deletedMessageId
-							? {
-									...message,
-									content: null,
-									attachments: [],
-									deletedAt: message.deletedAt ?? new Date().toISOString(),
-									isPending: false
-								}
-							: message
-					)
+					currentMessages.map((message) => applyDeletedMessageState(message, deletedMessageId))
 				);
 				return;
 			}
@@ -696,9 +792,18 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 				}
 
 				const acknowledgedRequestId = payload.requestId;
+				const pendingRequest = pendingMessageRequestsRef.current.get(acknowledgedRequestId);
+
+				if (!pendingRequest) {
+					return;
+				}
+
+				if (pendingRequest.type !== 'send') {
+					pendingMessageRequestsRef.current.delete(acknowledgedRequestId);
+				}
 				setMessages((currentMessages) =>
 					currentMessages.map((message) =>
-						message.id === acknowledgedRequestId
+						message.id === pendingRequest.messageId
 							? {
 									...message,
 									isPending: false
@@ -706,6 +811,14 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 							: message
 					)
 				);
+
+				if (pendingRequest.type === 'delete') {
+					setDeletingMessageIds((currentMessageIds) =>
+						currentMessageIds.filter(
+							(currentMessageId) => currentMessageId !== pendingRequest.messageId
+						)
+					);
+				}
 				return;
 			}
 
@@ -720,13 +833,31 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 
 				if (typeof payload.requestId === 'string') {
 					const failedRequestId = payload.requestId;
+					const pendingRequest = pendingMessageRequestsRef.current.get(failedRequestId);
 
-					pendingRequestIdsRef.current = pendingRequestIdsRef.current.filter(
-						(requestId) => requestId !== failedRequestId
-					);
-					setMessages((currentMessages) =>
-						currentMessages.filter((message) => message.id !== failedRequestId)
-					);
+					pendingMessageRequestsRef.current.delete(failedRequestId);
+
+					if (pendingRequest) {
+						if (pendingRequest.type === 'send') {
+							setMessages((currentMessages) =>
+								currentMessages.filter((message) => message.id !== pendingRequest.messageId)
+							);
+						} else {
+							setMessages((currentMessages) =>
+								currentMessages.map((message) =>
+									message.id === pendingRequest.messageId ? pendingRequest.previousMessage : message
+								)
+							);
+
+							if (pendingRequest.type === 'delete') {
+								setDeletingMessageIds((currentMessageIds) =>
+									currentMessageIds.filter(
+										(currentMessageId) => currentMessageId !== pendingRequest.messageId
+									)
+								);
+							}
+						}
+					}
 				}
 
 				setSendError(errorMessage);
@@ -866,7 +997,10 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 		setSendError(null);
 		setAttachmentError(null);
 		setMessages((currentMessages) => [...currentMessages, optimisticMessage]);
-		pendingRequestIdsRef.current.push(requestId);
+		pendingMessageRequestsRef.current.set(requestId, {
+			type: 'send',
+			messageId: requestId
+		});
 		shouldScrollToBottomRef.current = true;
 		setIsSendingMessage(true);
 
@@ -900,9 +1034,7 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 				})
 			);
 		} catch (error) {
-			pendingRequestIdsRef.current = pendingRequestIdsRef.current.filter(
-				(currentRequestId) => currentRequestId !== requestId
-			);
+			pendingMessageRequestsRef.current.delete(requestId);
 			setMessages((currentMessages) =>
 				currentMessages.filter((message) => message.id !== requestId)
 			);
@@ -912,6 +1044,91 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 		}
 	}, [conversationId, currentUser, inputValue, queuedAttachments, uploadQueuedAttachments]);
 
+	const cancelEditingMessage = useCallback(() => {
+		setEditingMessage(null);
+		setInputValue('');
+		setSendError(null);
+	}, []);
+
+	const saveEditedMessage = useCallback(async () => {
+		if (!editingMessage || inputValue.trim() === editingMessage.originalContent) {
+			return;
+		}
+		if (!conversationId || !socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+			setSendError('連線尚未建立，請稍後再試');
+			return;
+		}
+
+		const requestId = crypto.randomUUID();
+		const normalizedContent = inputValue.trim();
+
+		if (!normalizedContent) {
+			return;
+		}
+
+		const previousMessage = messages.find((message) => message.id === editingMessage.messageId);
+
+		if (!previousMessage || previousMessage.deletedAt) {
+			return;
+		}
+
+		pendingMessageRequestsRef.current.set(requestId, {
+			type: 'edit',
+			messageId: editingMessage.messageId,
+			previousMessage
+		});
+		setIsSendingMessage(true);
+		setSendError(null);
+		setMessages((currentMessages) =>
+			currentMessages.map((message) =>
+				message.id === editingMessage.messageId
+					? {
+							...message,
+							content: normalizedContent,
+							editedAt: new Date().toISOString(),
+							isPending: true
+						}
+					: message
+			)
+		);
+
+		try {
+			socketRef.current.send(
+				JSON.stringify({
+					event: 'message:edit',
+					requestId,
+					payload: {
+						messageId: editingMessage.messageId,
+						content: normalizedContent
+					}
+				})
+			);
+			setEditingMessage(null);
+			setInputValue('');
+		} catch (error) {
+			pendingMessageRequestsRef.current.delete(requestId);
+			setMessages((currentMessages) =>
+				currentMessages.map((message) =>
+					message.id === previousMessage.id ? previousMessage : message
+				)
+			);
+			setEditingMessage(null);
+			setInputValue('');
+			setSendError(getErrorMessage(error));
+		} finally {
+			setIsSendingMessage(false);
+		}
+	}, [conversationId, editingMessage, inputValue, messages]);
+
+	const submitComposer = useCallback(async () => {
+		if (editingMessage) {
+			await saveEditedMessage();
+			return;
+		}
+
+		await sendMessage();
+	}, [editingMessage, saveEditedMessage, sendMessage]);
+
 	const handleTextareaKeyDown = useCallback(
 		(event: KeyboardEvent<HTMLTextAreaElement>) => {
 			if (event.key !== 'Enter' || event.shiftKey) {
@@ -919,13 +1136,18 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 			}
 
 			event.preventDefault();
-			void sendMessage();
+			void submitComposer();
 		},
-		[sendMessage]
+		[submitComposer]
 	);
 
 	const onFileInputChange = useCallback(
 		(event: ChangeEvent<HTMLInputElement>) => {
+			if (editingMessage) {
+				event.target.value = '';
+				return;
+			}
+
 			if (!event.target.files) {
 				return;
 			}
@@ -933,7 +1155,7 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 			queueFileSelection(event.target.files);
 			event.target.value = '';
 		},
-		[queueFileSelection]
+		[editingMessage, queueFileSelection]
 	);
 
 	const onDropOnInput = useCallback(
@@ -942,21 +1164,193 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 			event.stopPropagation();
 			setIsDragOverInput(false);
 
+			if (editingMessage) {
+				return;
+			}
+
 			if (event.dataTransfer.files.length > 0) {
 				queueFileSelection(event.dataTransfer.files);
 			}
 		},
-		[queueFileSelection]
+		[editingMessage, queueFileSelection]
 	);
 
-	const canSendMessage = useMemo(
-		() =>
+	const canSendMessage = useMemo(() => {
+		if (isSendingMessage) {
+			return false;
+		}
+
+		const normalizedContent = inputValue.trim();
+
+		if (editingMessage) {
+			return Boolean(conversationId) && normalizedContent.length > 0;
+		}
+
+		return (
 			(socketConnected ||
 				Boolean(socketRef.current && socketRef.current.readyState === WebSocket.OPEN)) &&
-			!isSendingMessage &&
-			(inputValue.trim().length > 0 || queuedAttachments.length > 0),
-		[inputValue, isSendingMessage, queuedAttachments.length, socketConnected]
+			(normalizedContent.length > 0 || queuedAttachments.length > 0)
+		);
+	}, [
+		conversationId,
+		editingMessage,
+		inputValue,
+		isSendingMessage,
+		queuedAttachments.length,
+		socketConnected
+	]);
+
+	const currentUserGroupRole = useMemo(() => {
+		if (!groupChat) {
+			return null;
+		}
+
+		const currentParticipant = groupChat.participants.find(
+			(participant) => participant.user.id === currentUser.id
+		);
+
+		return currentParticipant?.role ?? null;
+	}, [currentUser.id, groupChat]);
+
+	const handleCopyMessage = useCallback(async (message: GroupMessage): Promise<void> => {
+		if (!navigator.clipboard?.writeText) {
+			setSendError('此瀏覽器不支援複製功能');
+			return;
+		}
+
+		try {
+			await navigator.clipboard.writeText(message.content ?? '');
+		} catch {
+			setSendError('複製訊息失敗，請稍後再試');
+		}
+	}, []);
+
+	const handleEditMessageIntent = useCallback(
+		(message: GroupMessage) => {
+			if (message.sender.id !== currentUser.id || !message.content || message.deletedAt) {
+				return;
+			}
+
+			setOpenMessageMenuId(null);
+			setEditingMessage({
+				messageId: message.id,
+				originalContent: message.content
+			});
+			setInputValue(message.content);
+			setQueuedAttachments([]);
+			setAttachmentError(null);
+			setSendError(null);
+			requestAnimationFrame(() => textareaRef.current?.focus());
+		},
+		[currentUser.id]
 	);
+
+	const handleDeleteMessageIntent = useCallback(
+		(message: GroupMessage, actionState: MessageActionState) => {
+			const isSelfMessage = message.sender.id === currentUser.id;
+			const canDeleteAsSender = actionState.deleteScope === 'sender' && isSelfMessage;
+			const canDeleteAsGroupOwner =
+				actionState.deleteScope === 'group-owner' &&
+				currentUserGroupRole === 'OWNER' &&
+				!isSelfMessage;
+
+			if (
+				(!canDeleteAsSender && !canDeleteAsGroupOwner) ||
+				message.deletedAt ||
+				deletingMessageIds.includes(message.id)
+			) {
+				return;
+			}
+			if (
+				!conversationId ||
+				!socketRef.current ||
+				socketRef.current.readyState !== WebSocket.OPEN
+			) {
+				setSendError('連線尚未建立，請稍後再試');
+				return;
+			}
+
+			const messageId = message.id;
+			const requestId = crypto.randomUUID();
+			const deleteScope: GroupMessageDeleteIntent['deleteScope'] = canDeleteAsSender
+				? 'sender'
+				: 'group-owner';
+			const previousMessage = messages.find((currentMessage) => currentMessage.id === messageId);
+
+			if (!previousMessage) {
+				return;
+			}
+
+			pendingMessageRequestsRef.current.set(requestId, {
+				type: 'delete',
+				messageId,
+				previousMessage
+			});
+			setOpenMessageMenuId(null);
+			setSendError(null);
+			onMessageDeleteIntent?.({
+				messageId,
+				deleteScope
+			});
+			setDeletingMessageIds((currentMessageIds) =>
+				currentMessageIds.includes(messageId)
+					? currentMessageIds
+					: [...currentMessageIds, messageId]
+			);
+
+			try {
+				socketRef.current.send(
+					JSON.stringify({
+						event: 'message:delete',
+						requestId,
+						payload: { messageId }
+					})
+				);
+				setMessages((currentMessages) =>
+					currentMessages.map((currentMessage) =>
+						applyDeletedMessageState(currentMessage, messageId, true)
+					)
+				);
+
+				if (editingMessage?.messageId === messageId) {
+					cancelEditingMessage();
+				}
+			} catch (error) {
+				pendingMessageRequestsRef.current.delete(requestId);
+				setMessages((currentMessages) =>
+					currentMessages.map((currentMessage) =>
+						currentMessage.id === previousMessage.id ? previousMessage : currentMessage
+					)
+				);
+				setSendError(getErrorMessage(error));
+				setDeletingMessageIds((currentMessageIds) =>
+					currentMessageIds.filter((currentMessageId) => currentMessageId !== messageId)
+				);
+			}
+		},
+		[
+			cancelEditingMessage,
+			conversationId,
+			currentUser.id,
+			currentUserGroupRole,
+			deletingMessageIds,
+			editingMessage?.messageId,
+			messages,
+			onMessageDeleteIntent
+		]
+	);
+
+	useEffect(() => {
+		if (!editingMessage) {
+			return;
+		}
+
+		const targetMessage = messages.find((message) => message.id === editingMessage.messageId);
+
+		if (!targetMessage || targetMessage.deletedAt || !targetMessage.content) {
+			cancelEditingMessage();
+		}
+	}, [cancelEditingMessage, editingMessage, messages]);
 
 	return (
 		<div className="bg-background flex h-full w-full flex-col overflow-hidden">
@@ -985,6 +1379,12 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 					) : null}
 					{messages.map((message) => {
 						const isSelf = message.sender.id === currentUser.id;
+						const canDeleteAsGroupOwner = currentUserGroupRole === 'OWNER' && !isSelf;
+						const canEditMessage = isSelf && !message.deletedAt && Boolean(message.content);
+						const actionState: MessageActionState = {
+							canEdit: isSelf,
+							deleteScope: isSelf ? 'sender' : canDeleteAsGroupOwner ? 'group-owner' : 'none'
+						};
 
 						return (
 							<GroupChatBubble
@@ -992,6 +1392,25 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 								isSelf={isSelf}
 								isPending={message.isPending}
 								message={message}
+								actionState={actionState}
+								isMenuOpen={openMessageMenuId === message.id}
+								onToggleMenu={() =>
+									setOpenMessageMenuId((currentMenuId) =>
+										currentMenuId === message.id ? null : message.id
+									)
+								}
+								onCloseMenu={() =>
+									setOpenMessageMenuId((currentMenuId) =>
+										currentMenuId === message.id ? null : currentMenuId
+									)
+								}
+								onCopy={() => handleCopyMessage(message)}
+								onEdit={() => handleEditMessageIntent(message)}
+								onDelete={() => handleDeleteMessageIntent(message, actionState)}
+								editDisabled={!canEditMessage}
+								deleteDisabled={
+									Boolean(message.deletedAt) || deletingMessageIds.includes(message.id)
+								}
 							/>
 						);
 					})}
@@ -1014,7 +1433,23 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 						</p>
 					) : null}
 
-					{queuedAttachments.length > 0 ? (
+					{editingMessage ? (
+						<div className="border-border bg-background mb-2 flex items-start justify-between gap-3 rounded-lg border px-3 py-2">
+							<div className="min-w-0">
+								<p className="text-action text-xs font-medium">正在編輯訊息</p>
+								<p className="text-text-muted truncate text-xs">{editingMessage.originalContent}</p>
+							</div>
+							<button
+								type="button"
+								onClick={cancelEditingMessage}
+								className="text-text-muted hover:text-text-primary shrink-0 text-xs transition-colors"
+							>
+								取消
+							</button>
+						</div>
+					) : null}
+
+					{!editingMessage && queuedAttachments.length > 0 ? (
 						<div className="mb-2 flex flex-wrap gap-2">
 							{queuedAttachments.map((attachment) => (
 								<div
@@ -1041,14 +1476,22 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 
 					<div
 						className={`border-border bg-background focus-within:ring-action/30 flex items-end gap-2 rounded-xl border p-2 transition ${
-							isDragOverInput ? 'ring-action/40 ring-2' : ''
+							isDragOverInput && !editingMessage ? 'ring-action/40 ring-2' : ''
 						}`}
 						onDragEnter={(event) => {
+							if (editingMessage) {
+								return;
+							}
+
 							event.preventDefault();
 							event.stopPropagation();
 							setIsDragOverInput(true);
 						}}
 						onDragOver={(event) => {
+							if (editingMessage) {
+								return;
+							}
+
 							event.preventDefault();
 							event.stopPropagation();
 							setIsDragOverInput(true);
@@ -1072,7 +1515,7 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 							icon={Plus}
 							label="新增附件"
 							onClick={() => fileInputRef.current?.click()}
-							disabled={isSendingMessage}
+							disabled={isSendingMessage || Boolean(editingMessage)}
 						/>
 						<textarea
 							ref={textareaRef}
@@ -1083,20 +1526,20 @@ export function GroupChatView({ accessToken, currentUser, groupId }: GroupChatVi
 								setSendError(null);
 							}}
 							onKeyDown={handleTextareaKeyDown}
-							placeholder="輸入訊息..."
+							placeholder={editingMessage ? '編輯訊息...' : '輸入訊息...'}
 							className="text-text-primary placeholder:text-text-muted max-h-36 min-h-9 grow resize-none bg-transparent px-1 py-1 text-sm leading-6 outline-none"
 						/>
 						<Button
 							type="button"
 							size="sm"
 							onClick={() => {
-								void sendMessage();
+								void submitComposer();
 							}}
 							disabled={!canSendMessage}
 							loading={isSendingMessage}
 							className="h-9 px-3"
 						>
-							<Send className="size-4" />
+							{editingMessage ? '儲存' : <Send className="size-4" />}
 						</Button>
 					</div>
 				</div>

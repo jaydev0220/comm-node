@@ -432,7 +432,7 @@
 			"MessageDelete": {
 				"name": "message:delete",
 				"title": "Delete a message",
-				"summary": "Client soft-deletes a message. Allowed for sender or ADMIN+ role.",
+				"summary": "Client soft-deletes a message. Allowed for sender or GROUP OWNER.",
 				"payload": {
 					"type": "object",
 					"required": ["event", "requestId", "payload"],

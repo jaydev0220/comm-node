@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 import { prisma } from '../lib/db.js';
 import { errors } from '../middleware/error-handler.js';
-import type { Message, CursorPage, User, Attachment } from '@packages/schemas';
+import type { Attachment, CursorPage, Message, User } from '@packages/schemas';
 
 const formatUser = (user: {
 	id: string;

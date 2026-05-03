@@ -4,29 +4,30 @@ import { registerHandler, type WsMessageHandler } from './index.js';
 import type { AuthenticatedSocket } from './connection.js';
 import { sendError, sendAck, formatMessageForWs, broadcastToConversation } from './broadcast.js';
 import { createNotification } from '../services/notifications.service.js';
+import {
+	getConversationParticipantRole,
+	editMessage,
+	deleteMessage
+} from '../services/messages.service.js';
+import { isAppError } from '../middleware/error-handler.js';
 
-// ============================================================================
-// Permission Helpers
-// ============================================================================
+const handleAppError = (
+	socket: AuthenticatedSocket,
+	error: unknown,
+	requestId: string
+): boolean => {
+	if (!isAppError(error)) return false;
 
-const getParticipantRole = async (
-	userId: string,
-	conversationId: string
-): Promise<string | null> => {
-	const participant = await prisma.conversationParticipant.findUnique({
-		where: {
-			conversationId_userId: { conversationId, userId }
-		},
-		select: { role: true }
-	});
-	return participant?.role ?? null;
-};
-
-const canDeleteMessage = (role: string, senderId: string, userId: string): boolean => {
-	// Sender can always delete their own message
-	if (senderId === userId) return true;
-	// ADMIN and OWNER can delete any message
-	return role === 'ADMIN' || role === 'OWNER';
+	switch (error.code) {
+		case 'FORBIDDEN':
+			sendError(socket, 'FORBIDDEN', error.message, requestId);
+			return true;
+		case 'NOT_FOUND':
+			sendError(socket, 'NOT_FOUND', error.message, requestId);
+			return true;
+		default:
+			return false;
+	}
 };
 
 // ============================================================================
@@ -40,7 +41,7 @@ const handleMessageSend: WsMessageHandler = async (
 	const { requestId, payload } = message as MessageSend;
 	const { conversationId, content, attachmentIds } = payload;
 	// Check if user is a participant
-	const role = await getParticipantRole(socket.userId, conversationId);
+	const role = await getConversationParticipantRole(socket.userId, conversationId);
 
 	if (!role) {
 		sendError(socket, 'FORBIDDEN', 'You are not a participant of this conversation', requestId);
@@ -137,58 +138,24 @@ const handleMessageEdit: WsMessageHandler = async (
 	const { messageId, content } = payload;
 
 	try {
-		// Find the message
-		const existingMessage = await prisma.message.findUnique({
-			where: { id: messageId },
-			select: {
-				id: true,
-				conversationId: true,
-				senderId: true,
-				deletedAt: true
-			}
-		});
+		const result = await editMessage(socket.userId, messageId, content);
 
-		if (!existingMessage) {
-			sendError(socket, 'NOT_FOUND', 'Message not found', requestId);
-			return;
-		}
-		if (existingMessage.deletedAt) {
-			sendError(socket, 'FORBIDDEN', 'Cannot edit a deleted message', requestId);
-			return;
-		}
-		// Only sender can edit
-		if (existingMessage.senderId !== socket.userId) {
-			sendError(socket, 'FORBIDDEN', 'Only the sender can edit this message', requestId);
-			return;
-		}
-
-		// Check if user is still a participant
-		const role = await getParticipantRole(socket.userId, existingMessage.conversationId);
-
-		if (!role) {
-			sendError(socket, 'FORBIDDEN', 'You are not a participant of this conversation', requestId);
-			return;
-		}
-
-		// Update the message
-		const editedAt = new Date();
-
-		await prisma.message.update({
-			where: { id: messageId },
-			data: { content, editedAt }
-		});
 		// Broadcast to all participants
-		await broadcastToConversation(existingMessage.conversationId, {
+		await broadcastToConversation(result.conversationId, {
 			event: 'message:edited',
 			payload: {
-				messageId,
-				content,
-				editedAt: editedAt.toISOString()
+				messageId: result.messageId,
+				content: result.content,
+				editedAt: result.editedAt.toISOString()
 			}
 		});
 		// Send ack to sender
 		sendAck(socket, requestId);
 	} catch (err) {
+		if (handleAppError(socket, err, requestId)) {
+			return;
+		}
+
 		console.error('[WS] message:edit error:', err);
 		sendError(socket, 'INTERNAL_ERROR', 'Failed to edit message', requestId);
 	}
@@ -206,57 +173,20 @@ const handleMessageDelete: WsMessageHandler = async (
 	const { messageId } = payload;
 
 	try {
-		// Find the message
-		const existingMessage = await prisma.message.findUnique({
-			where: { id: messageId },
-			select: {
-				id: true,
-				conversationId: true,
-				senderId: true,
-				deletedAt: true
-			}
-		});
+		const result = await deleteMessage(socket.userId, messageId);
 
-		if (!existingMessage) {
-			sendError(socket, 'NOT_FOUND', 'Message not found', requestId);
-			return;
-		}
-		if (existingMessage.deletedAt) {
-			sendError(socket, 'FORBIDDEN', 'Message is already deleted', requestId);
-			return;
-		}
-
-		// Check participant role
-		const role = await getParticipantRole(socket.userId, existingMessage.conversationId);
-
-		if (!role) {
-			sendError(socket, 'FORBIDDEN', 'You are not a participant of this conversation', requestId);
-			return;
-		}
-		// Check permission to delete
-		if (!canDeleteMessage(role, existingMessage.senderId, socket.userId)) {
-			sendError(
-				socket,
-				'FORBIDDEN',
-				'You do not have permission to delete this message',
-				requestId
-			);
-			return;
-		}
-
-		// Soft delete the message
-		await prisma.message.update({
-			where: { id: messageId },
-			data: { deletedAt: new Date() }
-		});
 		// Broadcast to all participants
-		await broadcastToConversation(existingMessage.conversationId, {
+		await broadcastToConversation(result.conversationId, {
 			event: 'message:deleted',
-			payload: { messageId }
+			payload: { messageId: result.messageId }
 		});
 		// Send ack to sender
 		sendAck(socket, requestId);
 	} catch (err) {
+		if (handleAppError(socket, err, requestId)) {
+			return;
+		}
+
 		console.error('[WS] message:delete error:', err);
 		sendError(socket, 'INTERNAL_ERROR', 'Failed to delete message', requestId);
 	}

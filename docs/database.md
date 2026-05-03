@@ -191,8 +191,8 @@ Join table between User and Conversation. Carries a role for permission enforcem
 
 | Value  | Permissions                                                         |
 | ------ | ------------------------------------------------------------------- |
-| OWNER  | Full control: delete conversation, transfer ownership, manage roles |
-| ADMIN  | Add/remove members, edit conversation metadata, delete any message  |
+| OWNER  | Full control: delete conversation, transfer ownership, manage roles, delete any group message |
+| ADMIN  | Add/remove members, edit conversation metadata (no blanket message delete permission) |
 | MEMBER | Send messages, edit/delete own messages only                        |
 
 ### Business Rules
@@ -236,6 +236,7 @@ All conversation messages. Soft-deleted via `deletedAt` (row is retained; client
 
 - A message must have `content` OR at least one `Attachment` — not neither.
 - `ogEmbed` is fetched and stored server-side at send time; not re-fetched on edit.
+- Message delete permission is limited to the sender or the GROUP owner.
 - Soft-deleted messages retain their row; `content` is cleared and `deletedAt` is set.
 - `senderId` uses a restricted FK (no cascade) so message history is preserved if a user account is deleted.
 

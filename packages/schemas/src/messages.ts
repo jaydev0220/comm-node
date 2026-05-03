@@ -36,9 +36,17 @@ export const listMessagesParamsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
+export const editMessageRequestSchema = z.object({
+  content: z.string().min(1).max(4000),
+});
+
+export const deleteMessageRequestSchema = z.object({}).strict();
+
 // Types
 export type MessageType = z.infer<typeof messageTypeSchema>;
 export type Attachment = z.infer<typeof attachmentSchema>;
 export type OgEmbed = z.infer<typeof ogEmbedSchema>;
 export type Message = z.infer<typeof messageSchema>;
 export type ListMessagesParams = z.infer<typeof listMessagesParamsSchema>;
+export type EditMessageRequest = z.infer<typeof editMessageRequestSchema>;
+export type DeleteMessageRequest = z.infer<typeof deleteMessageRequestSchema>;
