@@ -243,12 +243,12 @@ All conversation messages. Soft-deleted via `deletedAt` (row is retained; client
 
 ## Attachment
 
-Files uploaded via `POST /uploads` and linked to a message. The file itself lives on local disk under `uploads/`; only metadata and the generated URL are stored here.
+Files uploaded via `POST /uploads` and later linked to a message when `message:send` claims the uploaded attachment ID. The file itself lives on local disk under `uploads/`; only metadata and the generated URL are stored here.
 
 | Column    | Type     | Constraints                                    | Notes              |
 | --------- | -------- | ---------------------------------------------- | ------------------ |
 | id        | UUID     | PK, default uuid()                             |                    |
-| messageId | UUID     | FK → [Message.id](http://Message.id) (CASCADE) |                    |
+| messageId | UUID?    | nullable FK → [Message.id](http://Message.id) (CASCADE) | Null while the upload is pending message send |
 | url       | String   | NOT NULL                                       | Relative `/uploads/...` path |
 | mimeType  | String   | NOT NULL                                       | e.g. `image/png`   |
 | size      | Int      | NOT NULL                                       | Size in bytes      |

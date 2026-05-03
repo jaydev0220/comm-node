@@ -159,11 +159,11 @@ model Message {
 
 model Attachment {
   id        String   @id @default(uuid())
-  messageId String
+  messageId String?
   url       String
   mimeType  String
   size      Int
   name      String
   createdAt DateTime @default(now())
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  message   Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
 }
