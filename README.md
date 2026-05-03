@@ -1,12 +1,30 @@
 # CommNode
 
-A real-time communication platform with WebSocket messaging, friend management, OAuth authentication, and real-time notification pushes for friend requests and new messages.
+A real-time communication platform with email/Google authentication, friend management, direct and group chats, WebSocket message mutations, file attachments, profile settings, and realtime notification pushes for friend requests and new messages.
+
+## Current Progress
+
+- Email registration is split into start/complete steps with a shared profile setup page.
+- Google OAuth supports returning-user login and new-user profile setup.
+- Authenticated users can update username/display name, upload avatars, change password for password-based accounts, and delete their account.
+- Friends support search-by-username, requests, accept/reject, remove, block/unblock, and online presence in the friend list.
+- Chats support direct conversations, group creation, group browsing/search, group metadata updates, participant management, and read-only REST history fetches.
+- Message send/edit/delete mutations are handled by WebSocket events; REST exposes message history only.
+- File uploads create pending attachment records that can be claimed by `message:send`.
+- Notifications support unread lists/counts, read/read-all endpoints, and WebSocket push/sync events.
+
+## Documentation
+
+- REST API: `docs/openapi.json` (OpenAPI 3.1.0)
+- WebSocket API: `docs/asyncapi.json` (AsyncAPI 3.1.0)
+- Database schema: `docs/database.md`
 
 ## Messaging Permissions
 
 - Message edits: sender only
 - Message deletes: sender or GROUP owner
 - GROUP admins cannot delete arbitrary messages
+- Message sends, edits, and deletes use websocket events with client-generated `requestId` values and `ack`/`error` responses.
 - Client message bubbles reveal an actions menu (`複製訊息`, `編輯訊息`, `移除訊息`) on hover, with edit/delete options gated by sender ownership and group-owner delete scope.
 
 ## Tech Stack
@@ -99,13 +117,21 @@ The frontend includes authentication pages with Traditional Chinese interface:
 
 ### Authentication Routes
 
-| Route              | Description                                               |
-| ------------------ | --------------------------------------------------------- |
-| `/login`           | Login page with Google OAuth and email/password           |
-| `/register`        | Registration step 1: email + password only                |
-| `/register/google` | Google OAuth transition page (redirects to shared setup page) |
+| Route              | Description                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| `/login`           | Login page with Google OAuth and email/password                                                         |
+| `/register`        | Registration step 1: email + password only                                                              |
+| `/register/google` | Google OAuth transition page (redirects to shared setup page)                                           |
 | `/register/setup`  | Shared profile setup for email and Google registration (username, display name, optional avatar upload) |
-| `/auth/success`    | OAuth callback handler, stores token and redirects        |
+| `/auth/success`    | OAuth callback handler, stores token and redirects                                                      |
+
+### Authenticated App Views
+
+- Friends home: add friends by username, respond to requests, filter online/offline friends, open DMs, remove/block friends.
+- Direct messages: create or load a DM with a friend, fetch history, send/edit/delete messages over WebSocket, and attach uploaded files.
+- Groups home: list/search group chats and create a group from existing friends.
+- Group chat: fetch history, send/edit/delete messages over WebSocket, and enforce owner delete permissions.
+- Profile settings: update username/display name, upload avatar, and change password when the account has password auth.
 
 ### Client Environment
 
@@ -141,23 +167,23 @@ docker compose logs -f
 
 **Required for production:**
 
-| Variable            | Description                     |
-| ------------------- | ------------------------------- |
-| `POSTGRES_PASSWORD` | PostgreSQL password             |
-| `JWT_SECRET`        | JWT signing secret (32+ chars) |
-| `GOOGLE_CLIENT_ID`  | Google OAuth client id          |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret   |
+| Variable               | Description                    |
+| ---------------------- | ------------------------------ |
+| `POSTGRES_PASSWORD`    | PostgreSQL password            |
+| `JWT_SECRET`           | JWT signing secret (32+ chars) |
+| `GOOGLE_CLIENT_ID`     | Google OAuth client id         |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret     |
 
 **Optional:**
 
-| Variable               | Default               | Description             |
-| ---------------------- | --------------------- | ----------------------- |
-| `POSTGRES_USER`        | `postgres`            | PostgreSQL username     |
-| `POSTGRES_DB`          | `comm`                | Database name           |
-| `SERVER_PORT`          | `3000`                | Host port for server    |
-| `CLIENT_PORT`          | `3001`                | Host port for client    |
-| `JWT_ACCESS_EXPIRES_IN`| `15m`                 | Access token expiry     |
-| `JWT_REFRESH_EXPIRES_IN`| `7d`                 | Refresh token expiry    |
+| Variable                 | Default    | Description          |
+| ------------------------ | ---------- | -------------------- |
+| `POSTGRES_USER`          | `postgres` | PostgreSQL username  |
+| `POSTGRES_DB`            | `comm`     | Database name        |
+| `SERVER_PORT`            | `3000`     | Host port for server |
+| `CLIENT_PORT`            | `3001`     | Host port for client |
+| `JWT_ACCESS_EXPIRES_IN`  | `15m`      | Access token expiry  |
+| `JWT_REFRESH_EXPIRES_IN` | `7d`       | Refresh token expiry |
 
 ### Troubleshooting
 

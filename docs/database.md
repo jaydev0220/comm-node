@@ -37,16 +37,16 @@ Message ──< Attachment
 
 Core identity record. `passwordHash` is null for OAuth-only accounts (Google login). `username` is the public handle; `displayName` is the shown name. Uploaded user avatars are stored as app-served `/uploads/...` paths, while OAuth providers may still populate an external URL.
 
-| Column       | Type     | Constraints        | Notes                        |
-| ------------ | -------- | ------------------ | ---------------------------- |
-| id           | UUID     | PK, default uuid() |                              |
-| email        | String   | UNIQUE, NOT NULL   |                              |
-| username     | String   | UNIQUE, NOT NULL   | 3–32 chars, `^[a-z0-9_]+$`   |
-| displayName  | String   | NOT NULL           | 1–64 chars                   |
+| Column       | Type     | Constraints        | Notes                                          |
+| ------------ | -------- | ------------------ | ---------------------------------------------- |
+| id           | UUID     | PK, default uuid() |                                                |
+| email        | String   | UNIQUE, NOT NULL   |                                                |
+| username     | String   | UNIQUE, NOT NULL   | 3–32 chars, `^[a-z0-9_]+$`                     |
+| displayName  | String   | NOT NULL           | 1–64 chars                                     |
 | avatarUrl    | String?  | nullable           | App-served `/uploads/...` path or external URL |
-| passwordHash | String?  | nullable           | null for OAuth-only accounts |
-| createdAt    | DateTime | default now()      |                              |
-| updatedAt    | DateTime | auto-updated       |                              |
+| passwordHash | String?  | nullable           | null for OAuth-only accounts                   |
+| createdAt    | DateTime | default now()      |                                                |
+| updatedAt    | DateTime | auto-updated       |                                                |
 
 **Indexes:** `email` (unique), `username` (unique)
 
@@ -125,7 +125,7 @@ Per-user notification feed rows used for unread lists and badge counts.
 | Column      | Type             | Constraints                              | Notes                                                              |
 | ----------- | ---------------- | ---------------------------------------- | ------------------------------------------------------------------ |
 | id          | UUID             | PK, default uuid()                       |                                                                    |
-| userId      | UUID             | FK → [User.id](http://User.id) (CASCADE) | Notification recipient                                              |
+| userId      | UUID             | FK → [User.id](http://User.id) (CASCADE) | Notification recipient                                             |
 | type        | NotificationType | NOT NULL                                 | Enum: `NEW_MESSAGE`, `FRIEND_REQUEST`                              |
 | referenceId | UUID (String)    | NOT NULL                                 | `messageId` for `NEW_MESSAGE`; `friendshipId` for `FRIEND_REQUEST` |
 | read        | Boolean          | NOT NULL, default false                  |                                                                    |
@@ -135,10 +135,10 @@ Per-user notification feed rows used for unread lists and badge counts.
 
 ### Enum: NotificationType
 
-| Value          | Description                                         |
-| -------------- | --------------------------------------------------- |
-| NEW_MESSAGE    | Unread message notification                         |
-| FRIEND_REQUEST | Pending friend request notification                 |
+| Value          | Description                         |
+| -------------- | ----------------------------------- |
+| NEW_MESSAGE    | Unread message notification         |
+| FRIEND_REQUEST | Pending friend request notification |
 
 ---
 
@@ -146,17 +146,17 @@ Per-user notification feed rows used for unread lists and badge counts.
 
 ## Conversation
 
-Unified table for both DMs and group channels, discriminated by `type`. `name` and `avatarUrl` are only meaningful for GROUP. `callChannelId` is reserved for future voice call extensibility.
+Unified table for both DMs and group channels, discriminated by `type`. `name` and `avatarUrl` are only meaningful for GROUP. `callChannelId` exists in the schema but no voice-call feature is implemented yet.
 
-| Column        | Type             | Constraints        | Notes                             |
-| ------------- | ---------------- | ------------------ | --------------------------------- |
-| id            | UUID             | PK, default uuid() |                                   |
-| type          | ConversationType | NOT NULL           | Enum: `DIRECT`, `GROUP`           |
-| name          | String?          | nullable           | Group only, 1–100 chars           |
-| avatarUrl     | String?          | nullable           | Group only, URI                   |
-| callChannelId | String?          | nullable           | Reserved for future voice support |
-| createdAt     | DateTime         | default now()      |                                   |
-| updatedAt     | DateTime         | auto-updated       |                                   |
+| Column        | Type             | Constraints        | Notes                                           |
+| ------------- | ---------------- | ------------------ | ----------------------------------------------- |
+| id            | UUID             | PK, default uuid() |                                                 |
+| type          | ConversationType | NOT NULL           | Enum: `DIRECT`, `GROUP`                         |
+| name          | String?          | nullable           | Group only, 1–100 chars                         |
+| avatarUrl     | String?          | nullable           | Group only, URI                                 |
+| callChannelId | String?          | nullable           | Stored only; no call workflow currently uses it |
+| createdAt     | DateTime         | default now()      |                                                 |
+| updatedAt     | DateTime         | auto-updated       |                                                 |
 
 ### Enum: ConversationType
 
@@ -189,17 +189,17 @@ Join table between User and Conversation. Carries a role for permission enforcem
 
 ### Enum: ParticipantRole
 
-| Value  | Permissions                                                         |
-| ------ | ------------------------------------------------------------------- |
-| OWNER  | Full control: delete conversation, transfer ownership, manage roles, delete any group message |
-| ADMIN  | Add/remove members, edit conversation metadata (no blanket message delete permission) |
-| MEMBER | Send messages, edit/delete own messages only                        |
+| Value  | Permissions                                                                            |
+| ------ | -------------------------------------------------------------------------------------- |
+| OWNER  | Full control: delete conversation, manage ADMIN/MEMBER roles, delete any group message |
+| ADMIN  | Add/remove members, edit conversation metadata (no blanket message delete permission)  |
+| MEMBER | Send messages, edit/delete own messages only                                           |
 
 ### Business Rules
 
 - Every GROUP must have exactly one OWNER at all times.
-- Ownership can only be transferred explicitly — it is not inherited on leave.
-- If the OWNER leaves without transferring, the application must block the action or auto-promote the longest-standing ADMIN.
+- Owner transfer is not currently implemented.
+- The OWNER cannot leave through the participant removal endpoint.
 - DIRECT conversations assign MEMBER to both participants (role is irrelevant for DMs).
 
 ---
@@ -208,7 +208,7 @@ Join table between User and Conversation. Carries a role for permission enforcem
 
 ## Message
 
-All conversation messages. Soft-deleted via `deletedAt` (row is retained; client renders a "message deleted" placeholder). `ogEmbed` is populated server-side when the message content contains a URL.
+All conversation messages. Soft-deleted via `deletedAt` (row is retained; client renders a "message deleted" placeholder). `ogEmbed` is a nullable JSON field in the database, but the current message-send service does not populate link previews.
 
 | Column         | Type        | Constraints                                              | Notes                                          |
 | -------------- | ----------- | -------------------------------------------------------- | ---------------------------------------------- |
@@ -235,9 +235,9 @@ All conversation messages. Soft-deleted via `deletedAt` (row is retained; client
 ### Business Rules
 
 - A message must have `content` OR at least one `Attachment` — not neither.
-- `ogEmbed` is fetched and stored server-side at send time; not re-fetched on edit.
+- REST only reads message history; send, edit, and delete mutations are WebSocket events.
 - Message delete permission is limited to the sender or the GROUP owner.
-- Soft-deleted messages retain their row; `content` is cleared and `deletedAt` is set.
+- Soft-deleted messages retain their row; the server sets `deletedAt` and does not clear stored `content` or attachments.
 - `senderId` uses a restricted FK (no cascade) so message history is preserved if a user account is deleted.
 
 ---
@@ -246,28 +246,28 @@ All conversation messages. Soft-deleted via `deletedAt` (row is retained; client
 
 Files uploaded via `POST /uploads` and later linked to a message when `message:send` claims the uploaded attachment ID. The file itself lives on local disk under `uploads/`; only metadata and the generated URL are stored here.
 
-| Column    | Type     | Constraints                                    | Notes              |
-| --------- | -------- | ---------------------------------------------- | ------------------ |
-| id        | UUID     | PK, default uuid()                             |                    |
+| Column    | Type     | Constraints                                             | Notes                                         |
+| --------- | -------- | ------------------------------------------------------- | --------------------------------------------- |
+| id        | UUID     | PK, default uuid()                                      |                                               |
 | messageId | UUID?    | nullable FK → [Message.id](http://Message.id) (CASCADE) | Null while the upload is pending message send |
-| url       | String   | NOT NULL                                       | Relative `/uploads/...` path |
-| mimeType  | String   | NOT NULL                                       | e.g. `image/png`   |
-| size      | Int      | NOT NULL                                       | Size in bytes      |
-| name      | String   | NOT NULL                                       | Original filename  |
-| createdAt | DateTime | default now()                                  |                    |
+| url       | String   | NOT NULL                                                | Relative `/uploads/...` path                  |
+| mimeType  | String   | NOT NULL                                                | e.g. `image/png`                              |
+| size      | Int      | NOT NULL                                                | Size in bytes                                 |
+| name      | String   | NOT NULL                                                | Original filename                             |
+| createdAt | DateTime | default now()                                           |                                               |
 
 ---
 
 # Enums Summary
 
-| Enum             | Values                     |
-| ---------------- | -------------------------- |
-| OAuthProvider    | GOOGLE                     |
-| FriendshipStatus | PENDING, ACCEPTED, BLOCKED |
+| Enum             | Values                      |
+| ---------------- | --------------------------- |
+| OAuthProvider    | GOOGLE                      |
+| FriendshipStatus | PENDING, ACCEPTED, BLOCKED  |
 | NotificationType | NEW_MESSAGE, FRIEND_REQUEST |
-| ConversationType | DIRECT, GROUP              |
-| ParticipantRole  | OWNER, ADMIN, MEMBER       |
-| MessageType      | TEXT, FILE, SYSTEM         |
+| ConversationType | DIRECT, GROUP               |
+| ParticipantRole  | OWNER, ADMIN, MEMBER        |
+| MessageType      | TEXT, FILE, SYSTEM          |
 
 ---
 
@@ -275,12 +275,12 @@ Files uploaded via `POST /uploads` and later linked to a message when `message:s
 
 ```
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/lib/prisma/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ─── Enums ───────────────────────────────────────────────
@@ -435,12 +435,12 @@ model Message {
 
 model Attachment {
   id        String   @id @default(uuid())
-  messageId String
+  messageId String?
   url       String
   mimeType  String
   size      Int
   name      String
   createdAt DateTime @default(now())
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  message   Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
 }
 ```
