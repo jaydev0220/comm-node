@@ -616,16 +616,9 @@ export function DmView({ accessToken, currentUser, friend, onMessageDeleteIntent
 		async (attachment: QueuedAttachment): Promise<UploadAttachmentResponse> => {
 			const formData = new FormData();
 			formData.append('file', attachment.file);
-
-			const headers = new Headers();
-
-			headers.set('Authorization', `Bearer ${accessToken}`);
-
-			const response = await fetch(getApiUrl('/uploads'), {
+			const response = await api.requestRaw('/uploads', {
 				method: 'POST',
-				headers,
-				body: formData,
-				credentials: 'include'
+				body: formData
 			});
 
 			const responseText = await response.text();
@@ -648,7 +641,7 @@ export function DmView({ accessToken, currentUser, friend, onMessageDeleteIntent
 
 			return parsedResponse;
 		},
-		[accessToken]
+		[]
 	);
 
 	const findExistingDirectConversationId = useCallback(async (): Promise<string | null> => {

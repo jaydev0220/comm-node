@@ -4,7 +4,7 @@ import { Camera, ImagePlus } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { Button, FormField, Input, Separator } from '@/components/ui';
-import { api, getApiUrl, getAssetUrl } from '@/lib/api';
+import { api, getAssetUrl } from '@/lib/api';
 import type { User } from '@/lib/api-types';
 
 interface ProfileViewProps {
@@ -88,6 +88,7 @@ const getResponseErrorMessage = async (response: Response, fallback: string): Pr
 };
 
 export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewProps) {
+	void accessToken;
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const [username, setUsername] = useState(user.username);
 	const [displayName, setDisplayName] = useState(user.displayName);
@@ -283,17 +284,9 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 			if (avatarFile) {
 				const formData = new FormData();
 				formData.set('avatar', avatarFile);
-
-				const headers = new Headers();
-				if (accessToken) {
-					headers.set('Authorization', `Bearer ${accessToken}`);
-				}
-
-				const response = await fetch(getApiUrl('/users/me/avatar'), {
+				const response = await api.requestRaw('/users/me/avatar', {
 					method: 'POST',
-					headers,
-					body: formData,
-					credentials: 'include'
+					body: formData
 				});
 
 				if (!response.ok) {
@@ -341,14 +334,9 @@ export function ProfileView({ user, accessToken, onProfileSaved }: ProfileViewPr
 		setPasswordSuccess(null);
 
 		try {
-			const response = await fetch(getApiUrl('/users/me/password'), {
+			const response = await api.requestRaw('/users/me/password', {
 				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json',
-					...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
-				},
-				body: JSON.stringify({ currentPassword, newPassword }),
-				credentials: 'include'
+				body: JSON.stringify({ currentPassword, newPassword })
 			});
 
 			if (!response.ok) {
