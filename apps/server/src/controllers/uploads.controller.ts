@@ -11,18 +11,6 @@ const AVATAR_FIELD_NAME = 'avatar';
 
 type FileFilter = NonNullable<multer.Options['fileFilter']>;
 
-const GENERIC_ALLOWED_MIME_TYPES = [
-	'image/jpeg',
-	'image/png',
-	'image/gif',
-	'image/webp',
-	'video/mp4',
-	'video/webm',
-	'audio/mpeg',
-	'audio/wav',
-	'application/pdf',
-	'text/plain'
-];
 const AVATAR_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
 const uploadsDirectoryPath = ensureUploadsDirectory();
 // Configure multer storage
@@ -48,7 +36,15 @@ const createFileFilter =
 		cb(errors.badRequest(errorMessage));
 	};
 
-const createUpload = (
+const createUpload = (): multer.Multer =>
+	multer({
+		storage,
+		limits: {
+			fileSize: DEFAULT_MAX_FILE_SIZE_BYTES
+		}
+	});
+
+const createFilteredUpload = (
 	allowedMimeTypes: readonly string[],
 	errorMessage = 'Invalid file type'
 ): multer.Multer =>
@@ -60,9 +56,9 @@ const createUpload = (
 		}
 	});
 
-export const upload = createUpload(GENERIC_ALLOWED_MIME_TYPES);
+export const upload = createUpload();
 
-const avatarUpload = createUpload(
+const avatarUpload = createFilteredUpload(
 	AVATAR_ALLOWED_MIME_TYPES,
 	'Invalid avatar file type. Allowed: image/jpeg, image/png, image/gif, image/webp'
 );

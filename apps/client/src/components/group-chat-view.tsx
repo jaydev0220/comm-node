@@ -79,6 +79,8 @@ interface EditingMessage {
 	originalContent: string;
 }
 
+type AttachmentPreviewKind = 'image' | 'audio' | 'video' | 'file';
+
 type PendingMessageRequest =
 	| {
 			type: 'send';
@@ -94,20 +96,6 @@ type PendingMessageRequest =
 			messageId: string;
 			previousMessage: GroupMessage;
 	  };
-
-const GENERIC_ALLOWED_MIME_TYPES = [
-	'image/jpeg',
-	'image/png',
-	'image/gif',
-	'image/webp',
-	'video/mp4',
-	'video/webm',
-	'audio/mpeg',
-	'audio/wav',
-	'application/pdf',
-	'text/plain'
-] as const;
-const ALLOWED_MIME_TYPE_SET = new Set<string>(GENERIC_ALLOWED_MIME_TYPES);
 
 const MAX_ATTACHMENT_COUNT = 10;
 const MESSAGES_PAGE_LIMIT = 50;
@@ -154,6 +142,46 @@ const formatFileSize = (size: number): string => {
 	}
 
 	return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const IMAGE_PREVIEW_MIME_TYPES = new Set<string>([
+	'image/jpeg',
+	'image/png',
+	'image/gif',
+	'image/webp',
+	'image/jpg'
+]);
+const AUDIO_PREVIEW_MIME_TYPES = new Set<string>([
+	'audio/aac',
+	'audio/mp3',
+	'audio/mpeg',
+	'audio/opus',
+	'audio/ogg',
+	'audio/wav',
+	'audio/x-wav',
+	'audio/webm'
+]);
+const VIDEO_PREVIEW_MIME_TYPES = new Set<string>([
+	'video/mp4',
+	'video/webm',
+	'video/matroska',
+	'video/x-matroska'
+]);
+
+const getAttachmentPreviewKind = (mimeType: string): AttachmentPreviewKind => {
+	if (IMAGE_PREVIEW_MIME_TYPES.has(mimeType)) {
+		return 'image';
+	}
+
+	if (AUDIO_PREVIEW_MIME_TYPES.has(mimeType)) {
+		return 'audio';
+	}
+
+	if (VIDEO_PREVIEW_MIME_TYPES.has(mimeType)) {
+		return 'video';
+	}
+
+	return 'file';
 };
 
 const getQueuedAttachmentKey = (file: File): string =>
@@ -319,6 +347,12 @@ const GroupChatBubble = ({
 	const bubbleClassName = isSelf
 		? 'bg-action text-action-fg rounded-br-sm'
 		: 'bg-surface-raised text-text-primary rounded-bl-sm';
+	const attachmentFrameClassName = isSelf
+		? 'border-action-fg/30 bg-action-fg/10'
+		: 'border-border bg-background/80';
+	const attachmentLinkClassName = isSelf
+		? 'border-action-fg/40 text-action-fg hover:bg-action-fg/10'
+		: 'border-border text-text-secondary hover:bg-surface';
 
 	return (
 		<div className={`group flex ${isSelf ? 'justify-end' : 'justify-start'}`}>
@@ -367,22 +401,100 @@ const GroupChatBubble = ({
 									<div className={`mt-2 flex flex-col gap-1 ${message.content ? '' : 'mt-0'}`}>
 										{message.attachments.map((attachment) => {
 											const attachmentUrl = getAssetUrl(attachment.url) ?? attachment.url;
+											const previewKind =
+												attachmentUrl.length > 0
+													? getAttachmentPreviewKind(attachment.mimeType)
+													: 'file';
+
+											if (previewKind === 'image') {
+												return (
+													<a
+														key={attachment.id}
+														href={attachmentUrl}
+														target="_blank"
+														rel="noreferrer"
+														className={`block max-w-sm overflow-hidden rounded-xl border p-2 ${attachmentFrameClassName}`}
+													>
+														<img
+															src={attachmentUrl}
+															alt={attachment.name}
+															loading="lazy"
+															className="max-h-64 w-full rounded-lg object-cover"
+														/>
+														<span className="mt-2 block truncate text-xs">{attachment.name}</span>
+													</a>
+												);
+											}
+
+											if (previewKind === 'audio') {
+												return (
+													<div
+														key={attachment.id}
+														className={`max-w-sm rounded-xl border p-2 ${attachmentFrameClassName}`}
+													>
+														<audio controls preload="metadata" className="block h-10 w-full max-w-xs">
+															<source src={attachmentUrl} type={attachment.mimeType} />
+														</audio>
+														<a
+															href={attachmentUrl}
+															target="_blank"
+															rel="noreferrer"
+															className="mt-2 inline-flex min-w-0 items-center gap-1 text-xs underline-offset-2 hover:underline"
+														>
+															<Paperclip className="size-3 shrink-0" />
+															<span className="truncate">{attachment.name}</span>
+														</a>
+													</div>
+												);
+											}
+
+											if (previewKind === 'video') {
+												return (
+													<div
+														key={attachment.id}
+														className={`max-w-sm rounded-xl border p-2 ${attachmentFrameClassName}`}
+													>
+														<video
+															controls
+															preload="metadata"
+															className="max-h-64 w-full rounded-lg bg-black"
+														>
+															<source src={attachmentUrl} type={attachment.mimeType} />
+														</video>
+														<a
+															href={attachmentUrl}
+															target="_blank"
+															rel="noreferrer"
+															className="mt-2 inline-flex min-w-0 items-center gap-1 text-xs underline-offset-2 hover:underline"
+														>
+															<Paperclip className="size-3 shrink-0" />
+															<span className="truncate">{attachment.name}</span>
+														</a>
+													</div>
+												);
+											}
 
 											return (
-												<a
-													key={attachment.id}
-													href={attachmentUrl}
-													target="_blank"
-													rel="noreferrer"
-													className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${
-														isSelf
-															? 'border-action-fg/40 text-action-fg hover:bg-action-fg/10'
-															: 'border-border text-text-secondary hover:bg-surface'
-													}`}
-												>
-													<Paperclip className="size-3" />
-													<span className="truncate">{attachment.name}</span>
-												</a>
+												attachmentUrl.length > 0 ? (
+													<a
+														key={attachment.id}
+														href={attachmentUrl}
+														target="_blank"
+														rel="noreferrer"
+														className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${attachmentLinkClassName}`}
+													>
+														<Paperclip className="size-3" />
+														<span className="truncate">{attachment.name}</span>
+													</a>
+												) : (
+													<div
+														key={attachment.id}
+														className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${attachmentLinkClassName}`}
+													>
+														<Paperclip className="size-3" />
+														<span className="truncate">{attachment.name}</span>
+													</div>
+												)
 											);
 										})}
 									</div>
@@ -475,12 +587,6 @@ export function GroupChatView({
 			return;
 		}
 
-		const invalidFiles = files.filter((file) => !ALLOWED_MIME_TYPE_SET.has(file.type));
-
-		if (invalidFiles.length > 0) {
-			setAttachmentError('附件格式不支援');
-		}
-
 		setQueuedAttachments((currentQueuedAttachments) => {
 			const existingKeys = new Set(
 				currentQueuedAttachments.map((queuedAttachment) =>
@@ -490,10 +596,6 @@ export function GroupChatView({
 			const nextQueuedAttachments = [...currentQueuedAttachments];
 
 			for (const file of files) {
-				if (!ALLOWED_MIME_TYPE_SET.has(file.type)) {
-					continue;
-				}
-
 				const fileKey = getQueuedAttachmentKey(file);
 
 				if (existingKeys.has(fileKey)) {
@@ -1507,7 +1609,6 @@ export function GroupChatView({
 							ref={fileInputRef}
 							type="file"
 							multiple
-							accept={GENERIC_ALLOWED_MIME_TYPES.join(',')}
 							className="hidden"
 							onChange={onFileInputChange}
 						/>
