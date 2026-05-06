@@ -1,95 +1,43 @@
 'use client';
 
 import { Plus, Search } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { GroupsGrid } from '@/components/groups-grid';
 import { CreateGroupModal } from '@/components/modals/create-group-modal';
 import { Button, Input } from '@/components/ui';
-import { api } from '@/lib/api';
-import type { Chat, CursorPage, FriendWithPresence } from '@/lib/api-types';
+import type { Chat, FriendWithPresence } from '@/lib/api-types';
 
 interface GroupsHomeViewProps {
+	currentUserId: string;
 	friends: FriendWithPresence[];
+	groups: Chat[];
+	isLoadingGroups: boolean;
+	groupsError: string | null;
 	unreadGroupIds: ReadonlySet<string>;
 	onOpenGroup: (groupId: string) => void;
+	onGroupCreated: (group: Chat) => void;
+	onOpenAddUserModal: (group: Chat) => void;
+	onLeaveGroup: (group: Chat) => void | Promise<void>;
+	onDeleteGroup: (group: Chat) => void | Promise<void>;
 }
 
-interface ChatsResponse {
-	data: Chat[];
-	pagination: CursorPage;
-}
-
-const GROUP_PAGE_LIMIT = 50;
-
-const getErrorMessage = (error: unknown): string => {
-	if (typeof error === 'object' && error && 'message' in error) {
-		const message = (error as { message?: unknown }).message;
-
-		if (typeof message === 'string' && message.length > 0) {
-			return message;
-		}
-	}
-
-	return '載入群組失敗，請稍後再試';
-};
-
-const sortGroupsByUpdatedAt = (groups: Chat[]): Chat[] =>
-	[...groups].sort((firstGroup, secondGroup) => {
-		const firstGroupTime = new Date(firstGroup.updatedAt).getTime();
-		const secondGroupTime = new Date(secondGroup.updatedAt).getTime();
-
-		if (Number.isNaN(firstGroupTime) || Number.isNaN(secondGroupTime)) {
-			return 0;
-		}
-
-		return secondGroupTime - firstGroupTime;
-	});
-
-export function GroupsHomeView({ friends, unreadGroupIds, onOpenGroup }: GroupsHomeViewProps) {
-	const [groups, setGroups] = useState<Chat[]>([]);
+export function GroupsHomeView({
+	currentUserId,
+	friends,
+	groups,
+	isLoadingGroups,
+	groupsError,
+	unreadGroupIds,
+	onOpenGroup,
+	onGroupCreated,
+	onOpenAddUserModal,
+	onLeaveGroup,
+	onDeleteGroup
+}: GroupsHomeViewProps) {
 	const [groupSearchInput, setGroupSearchInput] = useState('');
-	const [isLoadingGroups, setIsLoadingGroups] = useState(true);
-	const [groupsError, setGroupsError] = useState<string | null>(null);
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-	const loadGroups = useCallback(async () => {
-		setIsLoadingGroups(true);
-		setGroupsError(null);
-
-		try {
-			const loadedGroups: Chat[] = [];
-			let nextCursor: string | undefined;
-
-			while (true) {
-				const searchParams = new URLSearchParams({
-					limit: String(GROUP_PAGE_LIMIT)
-				});
-
-				if (nextCursor) {
-					searchParams.set('cursor', nextCursor);
-				}
-
-				const response = await api.get<ChatsResponse>(`/chats?${searchParams.toString()}`);
-				loadedGroups.push(...response.data.filter((chat) => chat.type === 'GROUP'));
-
-				if (!response.pagination.hasMore || !response.pagination.nextCursor) {
-					break;
-				}
-
-				nextCursor = response.pagination.nextCursor;
-			}
-
-			setGroups(sortGroupsByUpdatedAt(loadedGroups));
-		} catch (error) {
-			setGroupsError(getErrorMessage(error));
-		} finally {
-			setIsLoadingGroups(false);
-		}
-	}, []);
-
-	useEffect(() => {
-		void loadGroups();
-	}, [loadGroups]);
+	const [groupActionError, setGroupActionError] = useState<string | null>(null);
+	const [activeGroupActionId, setActiveGroupActionId] = useState<string | null>(null);
 
 	const filteredGroups = useMemo(() => {
 		const normalizedSearchInput = groupSearchInput.trim().toLowerCase();
@@ -103,18 +51,64 @@ export function GroupsHomeView({ friends, unreadGroupIds, onOpenGroup }: GroupsH
 		);
 	}, [groupSearchInput, groups]);
 
-	const handleGroupCreated = useCallback((createdGroup: Chat) => {
-		if (createdGroup.type !== 'GROUP') {
+	const handleOpenAddUserModal = (group: Chat) => {
+		setGroupActionError(null);
+		onOpenAddUserModal(group);
+	};
+
+	const handleLeaveGroup = async (group: Chat) => {
+		if (activeGroupActionId) {
 			return;
 		}
 
-		setGroups((currentGroups) =>
-			sortGroupsByUpdatedAt([
-				createdGroup,
-				...currentGroups.filter((currentGroup) => currentGroup.id !== createdGroup.id)
-			])
-		);
-	}, []);
+		setActiveGroupActionId(group.id);
+		setGroupActionError(null);
+
+		try {
+			await onLeaveGroup(group);
+		} catch (error) {
+			if (typeof error === 'object' && error && 'message' in error) {
+				const message = (error as { message?: unknown }).message;
+
+				setGroupActionError(
+					typeof message === 'string' && message.length > 0
+						? message
+						: '離開群組失敗，請稍後再試'
+				);
+			} else {
+				setGroupActionError('離開群組失敗，請稍後再試');
+			}
+		} finally {
+			setActiveGroupActionId(null);
+		}
+	};
+
+	const handleDeleteGroup = async (group: Chat) => {
+		if (activeGroupActionId) {
+			return;
+		}
+
+		setActiveGroupActionId(group.id);
+		setGroupActionError(null);
+
+		try {
+			await onDeleteGroup(group);
+		} catch (error) {
+			if (typeof error === 'object' && error && 'message' in error) {
+				const message = (error as { message?: unknown }).message;
+
+				setGroupActionError(
+					typeof message === 'string' && message.length > 0
+						? message
+						: '刪除群組失敗，請稍後再試'
+				);
+			} else {
+				setGroupActionError('刪除群組失敗，請稍後再試');
+			}
+		} finally {
+			setActiveGroupActionId(null);
+		}
+	};
 
 	return (
 		<div className="flex h-full w-full flex-col overflow-hidden px-8 py-6 md:px-10 md:py-8">
@@ -142,6 +136,11 @@ export function GroupsHomeView({ friends, unreadGroupIds, onOpenGroup }: GroupsH
 					{groupsError}
 				</p>
 			) : null}
+			{groupActionError ? (
+				<p className="mb-2 text-sm text-red-400" aria-live="polite">
+					{groupActionError}
+				</p>
+			) : null}
 
 			<div className="invisible-scroll-y min-h-0 grow">
 				{isLoadingGroups ? (
@@ -153,9 +152,13 @@ export function GroupsHomeView({ friends, unreadGroupIds, onOpenGroup }: GroupsH
 						) : null}
 						<GroupsGrid
 							groups={filteredGroups}
+							currentUserId={currentUserId}
 							unreadGroupIds={unreadGroupIds}
 							onOpenGroup={onOpenGroup}
 							onCreateGroup={() => setIsCreateModalOpen(true)}
+							onAddUser={handleOpenAddUserModal}
+							onLeaveGroup={handleLeaveGroup}
+							onDeleteGroup={handleDeleteGroup}
 						/>
 					</>
 				)}
@@ -166,7 +169,7 @@ export function GroupsHomeView({ friends, unreadGroupIds, onOpenGroup }: GroupsH
 				friends={friends}
 				existingGroups={groups}
 				onClose={() => setIsCreateModalOpen(false)}
-				onCreated={handleGroupCreated}
+				onCreated={onGroupCreated}
 			/>
 		</div>
 	);

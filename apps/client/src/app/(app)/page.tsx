@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type SubmitEvent } from 'react';
 import { House, Users, X } from 'lucide-react';
 import { AccountActionsMenu } from '@/components/account-actions-menu';
+import { AddGroupUsersModal } from '@/components/modals/add-group-users-modal';
 import Avatar from '@/components/avatar';
 import { DmView } from '@/components/dm-view';
 import { GroupChatView } from '@/components/group-chat-view';
@@ -18,6 +19,8 @@ import {
 } from '@/lib/use-notification-listener';
 import type {
 	AppNotification,
+	Chat,
+	CursorPage,
 	FriendRequestsResponse,
 	FriendsResponse,
 	Friendship,
@@ -37,7 +40,13 @@ interface FriendRequestToast {
 	createdAt: number;
 }
 
+interface ChatsResponse {
+	data: Chat[];
+	pagination: CursorPage;
+}
+
 const FRIEND_REQUEST_TOAST_DURATION_MS = 5000;
+const GROUP_PAGE_LIMIT = 50;
 const NOTIFICATIONS_PAGE_LIMIT = 50;
 
 const getFriends = (): Promise<FriendsResponse> => api.get('/friends');
@@ -75,9 +84,22 @@ const buildUserSearchQuery = (query: string): string => {
 	return params.toString();
 };
 
+const sortGroupsByUpdatedAt = (groups: Chat[]): Chat[] =>
+	[...groups].sort((firstGroup, secondGroup) => {
+		const firstGroupTime = new Date(firstGroup.updatedAt).getTime();
+		const secondGroupTime = new Date(secondGroup.updatedAt).getTime();
+
+		if (Number.isNaN(firstGroupTime) || Number.isNaN(secondGroupTime)) {
+			return 0;
+		}
+
+		return secondGroupTime - firstGroupTime;
+	});
+
 export default function AppPage() {
 	const { user, accessToken, reloadSession, clearAccessToken } = useAuthSession();
 	const [friends, setFriends] = useState<FriendWithPresence[]>([]);
+	const [groups, setGroups] = useState<Chat[]>([]);
 	const [pendingRequests, setPendingRequests] = useState<Friendship[]>([]);
 	const [friendRequestToasts, setFriendRequestToasts] = useState<FriendRequestToast[]>([]);
 	const [unreadNotifications, setUnreadNotifications] = useState<AppNotification[]>([]);
@@ -101,8 +123,13 @@ export default function AppPage() {
 		action: FriendAction;
 	} | null>(null);
 	const [isLoggingOut, setIsLoggingOut] = useState(false);
+	const [isLoadingGroups, setIsLoadingGroups] = useState(true);
+	const [groupsError, setGroupsError] = useState<string | null>(null);
 	const [selectedDmFriendId, setSelectedDmFriendId] = useState<string | null>(null);
 	const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+	const [addUsersTargetGroup, setAddUsersTargetGroup] = useState<Chat | null>(null);
+	const [addUsersError, setAddUsersError] = useState<string | null>(null);
+	const [isAddingUsersToGroup, setIsAddingUsersToGroup] = useState(false);
 	const openMenuContainerRef = useRef<HTMLDivElement | null>(null);
 
 	const loadFriendData = useCallback(async () => {
@@ -157,9 +184,54 @@ export default function AppPage() {
 		}
 	}, [user?.id]);
 
+	const loadGroups = useCallback(async () => {
+		if (!user?.id) {
+			setGroups([]);
+			setIsLoadingGroups(false);
+			return;
+		}
+
+		setIsLoadingGroups(true);
+		setGroupsError(null);
+
+		try {
+			const loadedGroups: Chat[] = [];
+			let nextCursor: string | undefined;
+
+			while (true) {
+				const searchParams = new URLSearchParams({
+					limit: String(GROUP_PAGE_LIMIT)
+				});
+
+				if (nextCursor) {
+					searchParams.set('cursor', nextCursor);
+				}
+
+				const response = await api.get<ChatsResponse>(`/chats?${searchParams.toString()}`);
+				loadedGroups.push(...response.data.filter((chat) => chat.type === 'GROUP'));
+
+				if (!response.pagination.hasMore || !response.pagination.nextCursor) {
+					break;
+				}
+
+				nextCursor = response.pagination.nextCursor;
+			}
+
+			setGroups(sortGroupsByUpdatedAt(loadedGroups));
+		} catch (error) {
+			setGroupsError(getErrorMessage(error));
+		} finally {
+			setIsLoadingGroups(false);
+		}
+	}, [user?.id]);
+
 	useEffect(() => {
 		void loadFriendData();
 	}, [loadFriendData]);
+
+	useEffect(() => {
+		void loadGroups();
+	}, [loadGroups]);
 
 	useEffect(() => {
 		void loadUnreadNotifications();
@@ -379,6 +451,10 @@ export default function AppPage() {
 		() => friends.find((friend) => friend.id === selectedDmFriendId) ?? null,
 		[friends, selectedDmFriendId]
 	);
+	const selectedGroup = useMemo<Chat | null>(
+		() => groups.find((group) => group.id === selectedGroupId) ?? null,
+		[groups, selectedGroupId]
+	);
 
 	const unreadDmFriendIds = useMemo(() => {
 		const friendIds = new Set<string>();
@@ -413,6 +489,26 @@ export default function AppPage() {
 	}, [unreadNotifications]);
 
 	useEffect(() => {
+		if (!selectedGroupId) {
+			return;
+		}
+
+		if (selectedGroup) {
+			return;
+		}
+
+		if (isLoadingGroups) {
+			return;
+		}
+
+		setSelectedGroupId(null);
+
+		if (pageState === 'group') {
+			setPageState('groups-home');
+		}
+	}, [isLoadingGroups, pageState, selectedGroup, selectedGroupId]);
+
+	useEffect(() => {
 		if (!selectedDmFriendId) {
 			return;
 		}
@@ -427,6 +523,55 @@ export default function AppPage() {
 			setPageState('home');
 		}
 	}, [pageState, selectedDmFriend, selectedDmFriendId]);
+
+	const handleGroupCreated = useCallback((createdGroup: Chat) => {
+		if (createdGroup.type !== 'GROUP') {
+			return;
+		}
+
+		setGroups((currentGroups) =>
+			sortGroupsByUpdatedAt([
+				createdGroup,
+				...currentGroups.filter((currentGroup) => currentGroup.id !== createdGroup.id)
+			])
+		);
+	}, []);
+
+	const handleGroupUpdated = useCallback((updatedGroup: Chat) => {
+		if (updatedGroup.type !== 'GROUP') {
+			return;
+		}
+
+		setGroups((currentGroups) =>
+			sortGroupsByUpdatedAt([
+				updatedGroup,
+				...currentGroups.filter((currentGroup) => currentGroup.id !== updatedGroup.id)
+			])
+		);
+	}, []);
+
+	const handleGroupRemoved = useCallback(
+		(removedGroupId: string) => {
+			setGroups((currentGroups) =>
+				currentGroups.filter((currentGroup) => currentGroup.id !== removedGroupId)
+			);
+			setUnreadNotifications((currentNotifications) =>
+				currentNotifications.filter(
+					(notification) => notification.conversationId !== removedGroupId
+				)
+			);
+			setAddUsersTargetGroup((currentGroup) =>
+				currentGroup?.id === removedGroupId ? null : currentGroup
+			);
+			setAddUsersError(null);
+
+			if (selectedGroupId === removedGroupId) {
+				setSelectedGroupId(null);
+				setPageState('groups-home');
+			}
+		},
+		[selectedGroupId]
+	);
 
 	const handleSendFriendRequest = async (event: SubmitEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -529,6 +674,66 @@ export default function AppPage() {
 		setPageState('group');
 	}, []);
 
+	const handleOpenAddUsersModal = useCallback((group: Chat) => {
+		setAddUsersTargetGroup(group);
+		setAddUsersError(null);
+	}, []);
+
+	const handleCloseAddUsersModal = useCallback(() => {
+		if (isAddingUsersToGroup) {
+			return;
+		}
+
+		setAddUsersTargetGroup(null);
+		setAddUsersError(null);
+	}, [isAddingUsersToGroup]);
+
+	const handleAddUsersToGroup = useCallback(
+		async (groupId: string, userIds: string[]): Promise<void> => {
+			if (userIds.length === 0) {
+				return;
+			}
+
+			setIsAddingUsersToGroup(true);
+			setAddUsersError(null);
+
+			try {
+				await Promise.all(
+					userIds.map((userId) => api.post(`/chats/${groupId}/participants`, { userId }))
+				);
+				const updatedGroup = await api.get<Chat>(`/chats/${groupId}`);
+
+				handleGroupUpdated(updatedGroup);
+				setAddUsersTargetGroup(null);
+			} catch (error) {
+				setAddUsersError(getErrorMessage(error));
+			} finally {
+				setIsAddingUsersToGroup(false);
+			}
+		},
+		[handleGroupUpdated]
+	);
+
+	const handleLeaveGroup = useCallback(
+		async (group: Chat): Promise<void> => {
+			if (!user?.id) {
+				throw new Error('找不到目前使用者');
+			}
+
+			await api.delete<void>(`/chats/${group.id}/participants/${user.id}`);
+			handleGroupRemoved(group.id);
+		},
+		[handleGroupRemoved, user?.id]
+	);
+
+	const handleDeleteGroup = useCallback(
+		async (group: Chat): Promise<void> => {
+			await api.delete<void>(`/chats/${group.id}`);
+			handleGroupRemoved(group.id);
+		},
+		[handleGroupRemoved]
+	);
+
 	const handleLogout = async () => {
 		if (isLoggingOut) {
 			return;
@@ -604,9 +809,17 @@ export default function AppPage() {
 
 	const renderGroupsHome = () => (
 		<GroupsHomeView
+			currentUserId={user.id}
 			friends={friends}
+			groups={groups}
+			isLoadingGroups={isLoadingGroups}
+			groupsError={groupsError}
 			unreadGroupIds={unreadGroupIds}
 			onOpenGroup={handleOpenGroup}
+			onGroupCreated={handleGroupCreated}
+			onOpenAddUserModal={handleOpenAddUsersModal}
+			onLeaveGroup={handleLeaveGroup}
+			onDeleteGroup={handleDeleteGroup}
 		/>
 	);
 
@@ -619,7 +832,17 @@ export default function AppPage() {
 			);
 		}
 
-		return <GroupChatView accessToken={accessToken} currentUser={user} groupId={selectedGroupId} />;
+		return (
+			<GroupChatView
+				accessToken={accessToken}
+				currentUser={user}
+				groupId={selectedGroupId}
+				group={selectedGroup}
+				onOpenAddUserModal={handleOpenAddUsersModal}
+				onLeaveGroup={handleLeaveGroup}
+				onDeleteGroup={handleDeleteGroup}
+			/>
+		);
 	};
 
 	const renderProfile = () => (
@@ -713,6 +936,15 @@ export default function AppPage() {
 					))}
 				</div>
 			) : null}
+			<AddGroupUsersModal
+				isOpen={Boolean(addUsersTargetGroup)}
+				group={addUsersTargetGroup}
+				friends={friends}
+				isSubmitting={isAddingUsersToGroup}
+				submitError={addUsersError}
+				onClose={handleCloseAddUsersModal}
+				onSubmit={handleAddUsersToGroup}
+			/>
 		</div>
 	);
 }

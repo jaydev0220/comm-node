@@ -22,6 +22,10 @@ interface GroupChatViewProps {
 	accessToken: string;
 	currentUser: User;
 	groupId: string;
+	group?: Chat | null;
+	onOpenAddUserModal: (group: Chat) => void;
+	onLeaveGroup: (group: Chat) => Promise<void>;
+	onDeleteGroup: (group: Chat) => Promise<void>;
 	onMessageDeleteIntent?: (intent: GroupMessageDeleteIntent) => void;
 }
 
@@ -549,9 +553,13 @@ export function GroupChatView({
 	accessToken,
 	currentUser,
 	groupId,
+	group,
+	onOpenAddUserModal,
+	onLeaveGroup,
+	onDeleteGroup,
 	onMessageDeleteIntent
 }: GroupChatViewProps) {
-	const [groupChat, setGroupChat] = useState<Chat | null>(null);
+	const [groupChat, setGroupChat] = useState<Chat | null>(group?.id === groupId ? group : null);
 	const [conversationId, setConversationId] = useState<string | null>(null);
 	const [messages, setMessages] = useState<GroupMessage[]>([]);
 	const [olderCursor, setOlderCursor] = useState<string | null>(null);
@@ -569,6 +577,7 @@ export function GroupChatView({
 	const [openMessageMenuId, setOpenMessageMenuId] = useState<string | null>(null);
 	const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
 	const [deletingMessageIds, setDeletingMessageIds] = useState<string[]>([]);
+	const [isMutatingGroup, setIsMutatingGroup] = useState(false);
 	const historyContainerRef = useRef<HTMLDivElement | null>(null);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -626,15 +635,9 @@ export function GroupChatView({
 		async (attachment: QueuedAttachment): Promise<UploadAttachmentResponse> => {
 			const formData = new FormData();
 			formData.append('file', attachment.file);
-
-			const headers = new Headers();
-			headers.set('Authorization', `Bearer ${accessToken}`);
-
-			const response = await fetch(getApiUrl('/uploads'), {
+			const response = await api.requestRaw('/uploads', {
 				method: 'POST',
-				headers,
-				body: formData,
-				credentials: 'include'
+				body: formData
 			});
 
 			const responseText = await response.text();
@@ -657,7 +660,7 @@ export function GroupChatView({
 
 			return parsedResponse;
 		},
-		[accessToken]
+		[]
 	);
 
 	const loadOlderMessages = useCallback(async () => {
@@ -696,6 +699,14 @@ export function GroupChatView({
 			setIsLoadingOlderMessages(false);
 		}
 	}, [conversationId, hasMoreOlder, isLoadingOlderMessages, olderCursor]);
+
+	useEffect(() => {
+		if (!group || group.id !== groupId || group.type !== 'GROUP') {
+			return;
+		}
+
+		setGroupChat(group);
+	}, [group, groupId]);
 
 	useEffect(() => {
 		let isActive = true;
@@ -1454,10 +1465,69 @@ export function GroupChatView({
 		}
 	}, [cancelEditingMessage, editingMessage, messages]);
 
+	const handleOpenAddUserModal = useCallback(
+		(targetGroup: Chat) => {
+			if (isMutatingGroup) {
+				return;
+			}
+
+			setConversationError(null);
+			onOpenAddUserModal(targetGroup);
+		},
+		[isMutatingGroup, onOpenAddUserModal]
+	);
+
+	const handleLeaveGroup = useCallback(
+		async (targetGroup: Chat) => {
+			if (isMutatingGroup) {
+				return;
+			}
+
+			setIsMutatingGroup(true);
+			setConversationError(null);
+
+			try {
+				await onLeaveGroup(targetGroup);
+			} catch (error) {
+				setConversationError(getErrorMessage(error));
+			} finally {
+				setIsMutatingGroup(false);
+			}
+		},
+		[isMutatingGroup, onLeaveGroup]
+	);
+
+	const handleDeleteGroup = useCallback(
+		async (targetGroup: Chat) => {
+			if (isMutatingGroup) {
+				return;
+			}
+
+			setIsMutatingGroup(true);
+			setConversationError(null);
+
+			try {
+				await onDeleteGroup(targetGroup);
+			} catch (error) {
+				setConversationError(getErrorMessage(error));
+			} finally {
+				setIsMutatingGroup(false);
+			}
+		},
+		[isMutatingGroup, onDeleteGroup]
+	);
+
 	return (
 		<div className="bg-background flex h-full w-full flex-col overflow-hidden">
 			{groupChat ? (
-				<GroupChatTopBar group={groupChat} />
+				<GroupChatTopBar
+					group={groupChat}
+					currentUserId={currentUser.id}
+					onAddUser={handleOpenAddUserModal}
+					onLeaveGroup={handleLeaveGroup}
+					onDeleteGroup={handleDeleteGroup}
+					disabled={isMutatingGroup}
+				/>
 			) : (
 				<header className="border-border bg-surface flex items-center border-b px-4 py-3">
 					<p className="text-text-muted text-sm">載入群組中…</p>

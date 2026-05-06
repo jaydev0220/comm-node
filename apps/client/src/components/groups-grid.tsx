@@ -4,16 +4,24 @@ import { GroupCard } from '@/components/group-card';
 
 interface GroupsGridProps {
 	groups: Chat[];
+	currentUserId: string;
 	unreadGroupIds: ReadonlySet<string>;
 	onOpenGroup: (groupId: string) => void;
 	onCreateGroup: () => void;
+	onAddUser: (group: Chat) => void;
+	onLeaveGroup: (group: Chat) => void | Promise<void>;
+	onDeleteGroup: (group: Chat) => void | Promise<void>;
 }
 
 export function GroupsGrid({
 	groups,
+	currentUserId,
 	unreadGroupIds,
 	onOpenGroup,
-	onCreateGroup
+	onCreateGroup,
+	onAddUser,
+	onLeaveGroup,
+	onDeleteGroup
 }: GroupsGridProps) {
 	return (
 		<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -21,8 +29,12 @@ export function GroupsGrid({
 				<GroupCard
 					key={group.id}
 					group={group}
+					currentUserId={currentUserId}
 					hasUnread={unreadGroupIds.has(group.id)}
 					onClick={() => onOpenGroup(group.id)}
+					onAddUser={onAddUser}
+					onLeaveGroup={onLeaveGroup}
+					onDeleteGroup={onDeleteGroup}
 				/>
 			))}
 			<button
