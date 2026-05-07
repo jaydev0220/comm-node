@@ -55,7 +55,7 @@ const getPendingRequests = (): Promise<FriendRequestsResponse> => api.get('/frie
 const UnreadDot = ({ className = '' }: { className?: string }) => (
 	<span
 		aria-hidden="true"
-		className={`absolute size-3 rounded-full bg-red-500 ring-2 ring-surface ${
+		className={`ring-surface absolute size-3 rounded-full bg-red-500 ring-2 ${
 			className || 'top-0 right-0'
 		}`}
 	/>
@@ -878,11 +878,7 @@ export default function AppPage() {
 				<div className="invisible-scroll-y flex h-full min-h-0 w-full grow flex-col items-center">
 					<div className="flex flex-col gap-2">
 						{friends.map((friend) => (
-							<div
-								key={friend.id}
-								className="relative"
-								onClick={() => handleOpenDm(friend.id)}
-							>
+							<div key={friend.id} className="relative" onClick={() => handleOpenDm(friend.id)}>
 								<Avatar name={friend.displayName} avatarUrl={friend.avatarUrl} size="lg" />
 								{unreadDmFriendIds.has(friend.id) ? <UnreadDot /> : null}
 							</div>
@@ -937,6 +933,7 @@ export default function AppPage() {
 				</div>
 			) : null}
 			<AddGroupUsersModal
+				key={addUsersTargetGroup?.id ?? 'closed'}
 				isOpen={Boolean(addUsersTargetGroup)}
 				group={addUsersTargetGroup}
 				friends={friends}

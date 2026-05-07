@@ -1,7 +1,7 @@
 'use client';
 
 import { Search, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Avatar from '@/components/avatar';
 import { Button, Input, Separator } from '@/components/ui';
 import type { Chat, FriendWithPresence } from '@/lib/api-types';
@@ -32,19 +32,6 @@ export function AddGroupUsersModal({
 }: AddGroupUsersModalProps) {
 	const [searchInput, setSearchInput] = useState('');
 	const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
-
-	const resetState = useCallback(() => {
-		setSearchInput('');
-		setSelectedFriendIds(new Set());
-	}, []);
-
-	useEffect(() => {
-		if (isOpen) {
-			return;
-		}
-
-		resetState();
-	}, [isOpen, resetState]);
 
 	useEffect(() => {
 		if (!isOpen) {
@@ -174,11 +161,7 @@ export function AddGroupUsersModal({
 												isSelected ? 'bg-action-subtle' : ''
 											}`}
 										>
-											<Avatar
-												name={friend.displayName}
-												avatarUrl={friend.avatarUrl}
-												size="sm"
-											/>
+											<Avatar name={friend.displayName} avatarUrl={friend.avatarUrl} size="sm" />
 											<div className="min-w-0 grow">
 												<p className="truncate text-sm font-medium">{friend.displayName}</p>
 												<p className="text-text-muted truncate text-xs">@{friend.username}</p>
@@ -197,12 +180,7 @@ export function AddGroupUsersModal({
 				</div>
 
 				<div className="mt-4 flex justify-end gap-2">
-					<Button
-						type="button"
-						variant="ghost"
-						disabled={isSubmitting}
-						onClick={onClose}
-					>
+					<Button type="button" variant="ghost" disabled={isSubmitting} onClick={onClose}>
 						取消
 					</Button>
 					<Button
