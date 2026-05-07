@@ -438,11 +438,7 @@ const GroupChatBubble = ({
 														key={attachment.id}
 														className={`max-w-sm rounded-xl border p-2 ${attachmentFrameClassName}`}
 													>
-														<audio
-															controls
-															preload="metadata"
-															className="block h-10 max-w-xs"
-														>
+														<audio controls preload="metadata" className="block h-10 max-w-xs">
 															<source src={attachmentUrl} type={attachment.mimeType} />
 														</audio>
 														<a
