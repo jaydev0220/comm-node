@@ -121,7 +121,7 @@ export function GroupActionsMenu({
 							type="button"
 							role="menuitem"
 							disabled={disabled}
-							className="hover:bg-surface-raised focus-visible:ring-border cursor-pointer rounded-lg px-3 py-2 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+							className="cursor-pointer rounded-lg px-3 py-2 text-left text-sm text-red-400 transition-colors hover:bg-red-500/10 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
 							onClick={() => {
 								void onLeaveGroup(group);
 								setIsOpen(false);
