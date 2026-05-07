@@ -113,7 +113,7 @@ export function GroupActionsMenu({
 								setIsOpen(false);
 							}}
 						>
-							Add User
+							新增成員
 						</button>
 					) : null}
 					{canLeaveGroup ? (
@@ -127,7 +127,7 @@ export function GroupActionsMenu({
 								setIsOpen(false);
 							}}
 						>
-							Leave Group
+							離開群組
 						</button>
 					) : null}
 					{canDeleteGroup ? (
@@ -141,7 +141,7 @@ export function GroupActionsMenu({
 								setIsOpen(false);
 							}}
 						>
-							Delete Group
+							移除群組
 						</button>
 					) : null}
 				</div>
