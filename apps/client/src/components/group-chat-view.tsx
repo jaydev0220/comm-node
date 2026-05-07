@@ -423,6 +423,7 @@ const GroupChatBubble = ({
 														<Image
 															src={attachmentUrl}
 															alt={attachment.name}
+															unoptimized
 															loading="lazy"
 															className="max-h-64 w-full rounded-lg object-cover"
 														/>
