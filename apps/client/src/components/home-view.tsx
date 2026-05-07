@@ -213,7 +213,7 @@ export function HomeView({
 									{unreadDmFriendIds.has(friend.id) ? (
 										<span
 											aria-hidden="true"
-											className="absolute top-0 right-0 size-2.5 rounded-full bg-red-500 ring-2 ring-surface"
+											className="ring-surface absolute top-0 right-0 size-2.5 rounded-full bg-red-500 ring-2"
 										/>
 									) : null}
 								</div>

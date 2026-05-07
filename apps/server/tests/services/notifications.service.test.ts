@@ -23,9 +23,8 @@ mock.module('../../src/ws/broadcast.js', {
 	}
 });
 
-const { createNotification, markUnreadByReference } = await import(
-	'../../src/services/notifications.service.js'
-);
+const { createNotification, markUnreadByReference } =
+	await import('../../src/services/notifications.service.js');
 
 describe('notifications.service', () => {
 	beforeEach(() => {
@@ -35,11 +34,10 @@ describe('notifications.service', () => {
 		mockPrisma.notification.updateMany.mock.resetCalls();
 		mockBroadcastNotificationNew.mock.resetCalls();
 		mockBroadcastNotificationCleared.mock.resetCalls();
-		mockPrisma.$transaction.mock.mockImplementation((callback: (tx: typeof mockPrisma) => unknown) =>
-			callback(mockPrisma)
+		mockPrisma.$transaction.mock.mockImplementation(
+			(callback: (tx: typeof mockPrisma) => unknown) => callback(mockPrisma)
 		);
 	});
-
 	it('creates conversation-aware message notifications and broadcasts them', async () => {
 		const notification = {
 			id: '13378f86-9e96-45df-9623-3e4752c85a74',
@@ -54,11 +52,16 @@ describe('notifications.service', () => {
 
 		mockPrisma.notification.create.mock.mockImplementationOnce(() => Promise.resolve(notification));
 
-		const result = await createNotification('recipient-1', 'NEW_MESSAGE', notification.referenceId, {
-			actorId: notification.actorId,
-			conversationId: notification.conversationId,
-			conversationType: 'GROUP'
-		});
+		const result = await createNotification(
+			'recipient-1',
+			'NEW_MESSAGE',
+			notification.referenceId,
+			{
+				actorId: notification.actorId,
+				conversationId: notification.conversationId,
+				conversationType: 'GROUP'
+			}
+		);
 
 		assert.deepStrictEqual(mockPrisma.notification.create.mock.calls[0]?.arguments[0], {
 			data: {
@@ -79,12 +82,13 @@ describe('notifications.service', () => {
 			result
 		]);
 	});
-
 	it('marks unread notifications by reference and broadcasts cleared ids', async () => {
 		mockPrisma.notification.findMany.mock.mockImplementationOnce(() =>
 			Promise.resolve([{ id: 'notification-1' }, { id: 'notification-2' }])
 		);
-		mockPrisma.notification.updateMany.mock.mockImplementationOnce(() => Promise.resolve({ count: 2 }));
+		mockPrisma.notification.updateMany.mock.mockImplementationOnce(() =>
+			Promise.resolve({ count: 2 })
+		);
 
 		const result = await markUnreadByReference(
 			'user-1',

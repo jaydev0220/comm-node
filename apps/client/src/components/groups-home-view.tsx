@@ -71,9 +71,7 @@ export function GroupsHomeView({
 				const message = (error as { message?: unknown }).message;
 
 				setGroupActionError(
-					typeof message === 'string' && message.length > 0
-						? message
-						: '離開群組失敗，請稍後再試'
+					typeof message === 'string' && message.length > 0 ? message : '離開群組失敗，請稍後再試'
 				);
 			} else {
 				setGroupActionError('離開群組失敗，請稍後再試');
@@ -98,9 +96,7 @@ export function GroupsHomeView({
 				const message = (error as { message?: unknown }).message;
 
 				setGroupActionError(
-					typeof message === 'string' && message.length > 0
-						? message
-						: '刪除群組失敗，請稍後再試'
+					typeof message === 'string' && message.length > 0 ? message : '刪除群組失敗，請稍後再試'
 				);
 			} else {
 				setGroupActionError('刪除群組失敗，請稍後再試');

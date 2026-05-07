@@ -17,6 +17,7 @@ import { MessageActionsMenu, type MessageActionState } from '@/components/messag
 import { Button } from '@/components/ui';
 import { api, getApiUrl, getAssetUrl } from '@/lib/api';
 import type { Chat, ChatMessage, ChatMessageAttachment, CursorPage, User } from '@/lib/api-types';
+import Image from 'next/image';
 
 interface GroupChatViewProps {
 	accessToken: string;
@@ -419,7 +420,7 @@ const GroupChatBubble = ({
 														rel="noreferrer"
 														className={`block max-w-sm overflow-hidden rounded-xl border p-2 ${attachmentFrameClassName}`}
 													>
-														<img
+														<Image
 															src={attachmentUrl}
 															alt={attachment.name}
 															loading="lazy"
@@ -436,7 +437,11 @@ const GroupChatBubble = ({
 														key={attachment.id}
 														className={`max-w-sm rounded-xl border p-2 ${attachmentFrameClassName}`}
 													>
-														<audio controls preload="metadata" className="block h-10 w-full max-w-xs">
+														<audio
+															controls
+															preload="metadata"
+															className="block h-10 w-full max-w-xs"
+														>
 															<source src={attachmentUrl} type={attachment.mimeType} />
 														</audio>
 														<a
@@ -478,27 +483,25 @@ const GroupChatBubble = ({
 												);
 											}
 
-											return (
-												attachmentUrl.length > 0 ? (
-													<a
-														key={attachment.id}
-														href={attachmentUrl}
-														target="_blank"
-														rel="noreferrer"
-														className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${attachmentLinkClassName}`}
-													>
-														<Paperclip className="size-3" />
-														<span className="truncate">{attachment.name}</span>
-													</a>
-												) : (
-													<div
-														key={attachment.id}
-														className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${attachmentLinkClassName}`}
-													>
-														<Paperclip className="size-3" />
-														<span className="truncate">{attachment.name}</span>
-													</div>
-												)
+											return attachmentUrl.length > 0 ? (
+												<a
+													key={attachment.id}
+													href={attachmentUrl}
+													target="_blank"
+													rel="noreferrer"
+													className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${attachmentLinkClassName}`}
+												>
+													<Paperclip className="size-3" />
+													<span className="truncate">{attachment.name}</span>
+												</a>
+											) : (
+												<div
+													key={attachment.id}
+													className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${attachmentLinkClassName}`}
+												>
+													<Paperclip className="size-3" />
+													<span className="truncate">{attachment.name}</span>
+												</div>
 											);
 										})}
 									</div>

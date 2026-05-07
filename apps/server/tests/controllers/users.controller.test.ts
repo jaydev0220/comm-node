@@ -202,7 +202,9 @@ describe('Users Controller', () => {
 	describe('changePassword', () => {
 		it('should verify current password, hash new password, and update stored hash', async () => {
 			mockAuthService.verifyUserPassword.mock.mockImplementationOnce(() => Promise.resolve(true));
-			mockPassword.hashPassword.mock.mockImplementationOnce(() => Promise.resolve('new-password-hash'));
+			mockPassword.hashPassword.mock.mockImplementationOnce(() =>
+				Promise.resolve('new-password-hash')
+			);
 			mockUsersService.updateUserPassword.mock.mockImplementationOnce(() => Promise.resolve());
 
 			const req = createMockRequest({

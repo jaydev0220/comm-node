@@ -25,9 +25,7 @@ const removeStoredFile = async (filePath: string): Promise<void> => {
 	}
 };
 
-export const createUploadedAttachment = async (
-	file: Express.Multer.File
-): Promise<Attachment> => {
+export const createUploadedAttachment = async (file: Express.Multer.File): Promise<Attachment> => {
 	const url = `/uploads/${file.filename}`;
 
 	try {

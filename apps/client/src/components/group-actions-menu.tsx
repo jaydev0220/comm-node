@@ -16,7 +16,10 @@ interface GroupActionsMenuProps {
 	disabled?: boolean;
 }
 
-const getCurrentUserRole = (group: Chat, currentUserId: string): 'OWNER' | 'ADMIN' | 'MEMBER' | null =>
+const getCurrentUserRole = (
+	group: Chat,
+	currentUserId: string
+): 'OWNER' | 'ADMIN' | 'MEMBER' | null =>
 	group.participants.find((participant) => participant.user.id === currentUserId)?.role ?? null;
 
 export function GroupActionsMenu({

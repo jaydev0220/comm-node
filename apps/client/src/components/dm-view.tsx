@@ -23,6 +23,7 @@ import type {
 	User
 } from '@/lib/api-types';
 import { Button } from '@/components/ui';
+import Image from 'next/image';
 
 interface DmViewProps {
 	accessToken: string;
@@ -388,116 +389,116 @@ const ChatBubble = ({
 					className={`rounded-2xl px-3 py-2 shadow-sm transition-opacity ${bubbleClassName} ${
 						isPending ? 'opacity-50' : 'opacity-100'
 					}`}
-					>
-						{message.deletedAt ? (
-							<p className="text-sm italic">訊息已刪除</p>
-						) : (
-							<>
-								{message.content ? (
-									<p className="text-sm wrap-break-word whitespace-pre-wrap">{message.content}</p>
-								) : null}
-								{message.attachments.length > 0 ? (
-									<div className={`mt-2 flex flex-col gap-1 ${message.content ? '' : 'mt-0'}`}>
-										{message.attachments.map((attachment) => {
-											const attachmentUrl = getAssetUrl(attachment.url) ?? attachment.url;
-											const previewKind =
-												attachmentUrl.length > 0
-													? getAttachmentPreviewKind(attachment.mimeType)
-													: 'file';
+				>
+					{message.deletedAt ? (
+						<p className="text-sm italic">訊息已刪除</p>
+					) : (
+						<>
+							{message.content ? (
+								<p className="text-sm wrap-break-word whitespace-pre-wrap">{message.content}</p>
+							) : null}
+							{message.attachments.length > 0 ? (
+								<div className={`mt-2 flex flex-col gap-1 ${message.content ? '' : 'mt-0'}`}>
+									{message.attachments.map((attachment) => {
+										const attachmentUrl = getAssetUrl(attachment.url) ?? attachment.url;
+										const previewKind =
+											attachmentUrl.length > 0
+												? getAttachmentPreviewKind(attachment.mimeType)
+												: 'file';
 
-											if (previewKind === 'image') {
-												return (
-													<a
-														key={attachment.id}
-														href={attachmentUrl}
-														target="_blank"
-														rel="noreferrer"
-														className={`block max-w-sm overflow-hidden rounded-xl border p-2 ${attachmentFrameClassName}`}
-													>
-														<img
-															src={attachmentUrl}
-															alt={attachment.name}
-															loading="lazy"
-															className="max-h-64 w-full rounded-lg object-cover"
-														/>
-														<span className="mt-2 block truncate text-xs">{attachment.name}</span>
-													</a>
-												);
-											}
-
-											if (previewKind === 'audio') {
-												return (
-													<div
-														key={attachment.id}
-														className={`max-w-sm rounded-xl border p-2 ${attachmentFrameClassName}`}
-													>
-														<audio controls preload="metadata" className="block h-10 w-full max-w-xs">
-															<source src={attachmentUrl} type={attachment.mimeType} />
-														</audio>
-														<a
-															href={attachmentUrl}
-															target="_blank"
-															rel="noreferrer"
-															className="mt-2 inline-flex min-w-0 items-center gap-1 text-xs underline-offset-2 hover:underline"
-														>
-															<Paperclip className="size-3 shrink-0" />
-															<span className="truncate">{attachment.name}</span>
-														</a>
-													</div>
-												);
-											}
-
-											if (previewKind === 'video') {
-												return (
-													<div
-														key={attachment.id}
-														className={`max-w-sm rounded-xl border p-2 ${attachmentFrameClassName}`}
-													>
-														<video
-															controls
-															preload="metadata"
-															className="max-h-64 w-full rounded-lg bg-black"
-														>
-															<source src={attachmentUrl} type={attachment.mimeType} />
-														</video>
-														<a
-															href={attachmentUrl}
-															target="_blank"
-															rel="noreferrer"
-															className="mt-2 inline-flex min-w-0 items-center gap-1 text-xs underline-offset-2 hover:underline"
-														>
-															<Paperclip className="size-3 shrink-0" />
-															<span className="truncate">{attachment.name}</span>
-														</a>
-													</div>
-												);
-											}
-
-											return attachmentUrl.length > 0 ? (
+										if (previewKind === 'image') {
+											return (
 												<a
 													key={attachment.id}
 													href={attachmentUrl}
 													target="_blank"
 													rel="noreferrer"
-													className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${attachmentLinkClassName}`}
+													className={`block max-w-sm overflow-hidden rounded-xl border p-2 ${attachmentFrameClassName}`}
 												>
-													<Paperclip className="size-3" />
-													<span className="truncate">{attachment.name}</span>
+													<Image
+														src={attachmentUrl}
+														alt={attachment.name}
+														loading="lazy"
+														className="max-h-64 w-full rounded-lg object-cover"
+													/>
+													<span className="mt-2 block truncate text-xs">{attachment.name}</span>
 												</a>
-											) : (
+											);
+										}
+
+										if (previewKind === 'audio') {
+											return (
 												<div
 													key={attachment.id}
-													className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${attachmentLinkClassName}`}
+													className={`max-w-sm rounded-xl border p-2 ${attachmentFrameClassName}`}
 												>
-													<Paperclip className="size-3" />
-													<span className="truncate">{attachment.name}</span>
+													<audio controls preload="metadata" className="block h-10 w-full max-w-xs">
+														<source src={attachmentUrl} type={attachment.mimeType} />
+													</audio>
+													<a
+														href={attachmentUrl}
+														target="_blank"
+														rel="noreferrer"
+														className="mt-2 inline-flex min-w-0 items-center gap-1 text-xs underline-offset-2 hover:underline"
+													>
+														<Paperclip className="size-3 shrink-0" />
+														<span className="truncate">{attachment.name}</span>
+													</a>
 												</div>
 											);
-										})}
-									</div>
-								) : null}
-							</>
-						)}
+										}
+
+										if (previewKind === 'video') {
+											return (
+												<div
+													key={attachment.id}
+													className={`max-w-sm rounded-xl border p-2 ${attachmentFrameClassName}`}
+												>
+													<video
+														controls
+														preload="metadata"
+														className="max-h-64 w-full rounded-lg bg-black"
+													>
+														<source src={attachmentUrl} type={attachment.mimeType} />
+													</video>
+													<a
+														href={attachmentUrl}
+														target="_blank"
+														rel="noreferrer"
+														className="mt-2 inline-flex min-w-0 items-center gap-1 text-xs underline-offset-2 hover:underline"
+													>
+														<Paperclip className="size-3 shrink-0" />
+														<span className="truncate">{attachment.name}</span>
+													</a>
+												</div>
+											);
+										}
+
+										return attachmentUrl.length > 0 ? (
+											<a
+												key={attachment.id}
+												href={attachmentUrl}
+												target="_blank"
+												rel="noreferrer"
+												className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${attachmentLinkClassName}`}
+											>
+												<Paperclip className="size-3" />
+												<span className="truncate">{attachment.name}</span>
+											</a>
+										) : (
+											<div
+												key={attachment.id}
+												className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${attachmentLinkClassName}`}
+											>
+												<Paperclip className="size-3" />
+												<span className="truncate">{attachment.name}</span>
+											</div>
+										);
+									})}
+								</div>
+							) : null}
+						</>
+					)}
 					<div
 						className={`mt-1 flex items-center gap-1 text-[11px] ${
 							isSelf ? 'text-action-fg/80' : 'text-text-muted'

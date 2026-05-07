@@ -116,9 +116,8 @@ describe('Participants Controller', () => {
 
 			await listParticipants(req as never, res as never, () => {});
 
-			const findManyArgs = mockPrisma.conversationParticipant.findMany.mock.calls[0]?.arguments[
-				0
-			] as unknown as {
+			const findManyArgs = mockPrisma.conversationParticipant.findMany.mock.calls[0]
+				?.arguments[0] as unknown as {
 				orderBy?: unknown;
 			};
 

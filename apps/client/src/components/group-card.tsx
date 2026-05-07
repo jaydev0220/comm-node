@@ -31,7 +31,7 @@ export function GroupCard({
 			{hasUnread ? (
 				<span
 					aria-hidden="true"
-					className="absolute top-2 left-2 z-10 size-3 rounded-full bg-red-500 ring-2 ring-surface"
+					className="ring-surface absolute top-2 left-2 z-10 size-3 rounded-full bg-red-500 ring-2"
 				/>
 			) : null}
 			<div className="absolute top-2 right-2 z-20">

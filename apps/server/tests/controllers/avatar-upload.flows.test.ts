@@ -214,9 +214,8 @@ describe('Avatar upload flows', () => {
 			displayName: 'Email User'
 		});
 
-		const avatarUrlArg = mockAuthService.completeEmailRegistration.mock.calls[0]?.arguments[
-			1
-		] as unknown;
+		const avatarUrlArg = mockAuthService.completeEmailRegistration.mock.calls[0]
+			?.arguments[1] as unknown;
 		const avatarUrl = assertAvatarPathArg(avatarUrlArg);
 
 		assert.ok(avatarUrl.startsWith('/uploads/'));

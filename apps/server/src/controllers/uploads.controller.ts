@@ -43,7 +43,6 @@ const createUpload = (): multer.Multer =>
 			fileSize: DEFAULT_MAX_FILE_SIZE_BYTES
 		}
 	});
-
 const createFilteredUpload = (
 	allowedMimeTypes: readonly string[],
 	errorMessage = 'Invalid file type'
